@@ -9,6 +9,10 @@ config AUDIO_BOARD_CUSTOM
     bool "Custom audio board"
 config ESP_LYRAT_V4_3_BOARD
     bool "ESP32-Lyrat V4.3"
+config ESP_LYRAT_V4_3_BOARD_BYT
+    bool "ESP32-Lyrat V4.3 BYT"
+config ESP_LYRAT_V4_3_BOARD_BYT_V102
+    bool "ESP32-Lyrat V4.3 BYT V1.0.2"
 config ESP_LYRAT_V4_2_BOARD
     bool "ESP32-Lyrat V4.2"
 config ESP_LYRATD_MSC_V2_1_BOARD
@@ -49,5 +53,9 @@ config ESP32_KORVO_DU1906_ADC_ES7243
     bool "ESP32_KORVO_DU1906_ADC_ES7243"
 endchoice
 
+config AUDIO_IP_SDK
+    bool "Select http up stream method, default is http put"
+	default true
+	
 endmenu
 

@@ -239,6 +239,9 @@ esp_err_t es8388_set_mic_gain(es_mic_gain_t gain);
  *     - ESP_OK   Success
  */
 esp_err_t es8388_config_adc_input(es_adc_input_t input);
+esp_err_t es8388_set_adc_input(audio_hal_adc_input_t input);
+esp_err_t es8388_set_adc_input_gain(int input_gain);
+
 
 /**
  * @brief Set ES8388 dac output mode

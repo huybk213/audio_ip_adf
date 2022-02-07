@@ -38,6 +38,7 @@
  */
 #define FROM_MCLK_PIN       0
 #define FROM_SCLK_PIN       1
+#define MCLK_SOURCE         0
 
 /*
  * to define whether to reverse the clock

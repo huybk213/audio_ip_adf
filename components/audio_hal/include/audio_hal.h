@@ -146,6 +146,15 @@ typedef struct audio_hal {
     esp_err_t (*audio_codec_set_mute) (bool mute);                                                           /*!< set codec mute */
     esp_err_t (*audio_codec_set_volume)(int volume);                                                         /*!< set codec volume */
     esp_err_t (*audio_codec_get_volume)(int *volume);                                                        /*!< get codec volume */
+	
+	/* Phinht: add control adc input */
+	esp_err_t (*audio_codec_set_adc_input)(audio_hal_adc_input_t input_ch);                                  /*!< set codec adc input channel */
+	esp_err_t (*audio_codec_set_adc_input_gain)(int input_gain);                                     		 /*!< set codec adc input gain */
+
+	/* I2C read/write */
+	esp_err_t (*codec_i2c_master_read)(uint8_t slave_addr, uint8_t *data_rd, uint8_t size);					/*!< i2c read slave */
+	esp_err_t (*codec_i2c_master_write)(uint8_t slave_addr, uint8_t *data_wr, uint8_t size);				/*!< i2c write slave */
+	
     xSemaphoreHandle audio_hal_lock;                                                                         /*!< semaphore of codec */
     void *handle;                                                                                            /*!< handle of audio codec */
 } audio_hal_func_t;
@@ -161,7 +170,7 @@ typedef struct audio_hal {
  *
  * @return  int, 0--success, others--fail
  */
-audio_hal_handle_t audio_hal_init(audio_hal_codec_config_t *audio_hal_conf, audio_hal_func_t *audio_hal_func);
+audio_hal_handle_t audio_hal_init(audio_hal_codec_config_t *audio_hal_conf, audio_hal_func_t *audio_hal_func, int volume);
 
 /**
  * @brief Uninitialize media codec driver
@@ -229,6 +238,11 @@ esp_err_t audio_hal_set_volume(audio_hal_handle_t audio_hal, int volume);
  */
 esp_err_t audio_hal_get_volume(audio_hal_handle_t audio_hal, int *volume);
 
+// HuyTV merge from PhiNT at esp-adf 2.0 beta, 
+esp_err_t audio_hal_i2c_master_read(audio_hal_handle_t audio_hal, uint8_t slave_addr, uint8_t *data_rd, uint8_t size);
+esp_err_t audio_hal_i2c_master_write(audio_hal_handle_t audio_hal, uint8_t slave_addr, uint8_t *data_wr, uint8_t size);
+esp_err_t audio_hal_set_input(audio_hal_handle_t audio_hal, audio_hal_adc_input_t input_channel);
+esp_err_t audio_hal_set_input_gain(audio_hal_handle_t audio_hal, int input_gain);
 
 #ifdef __cplusplus
 }

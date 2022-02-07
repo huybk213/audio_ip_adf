@@ -143,13 +143,13 @@ bool audio_mem_spiram_is_enabled(void)
 bool audio_mem_spiram_stack_is_enabled(void)
 {
     bool ret = true;
-#if CONFIG_IDF_TARGET_ESP32
-    uint8_t chip_ver = esp_efuse_get_chip_ver();
-    if (chip_ver < 3) {
-        ESP_LOGW("AUIDO_MEM", "Can't support stack on external memory due to ESP32 chip is %d", chip_ver);
-        ret = false;
-    }
-#endif
+// #if CONFIG_IDF_TARGET_ESP32
+//     uint8_t chip_ver = esp_efuse_get_chip_ver();
+//     if (chip_ver < 3) {
+//         ESP_LOGW("AUIDO_MEM", "Can't support stack on external memory due to ESP32 chip is %d", chip_ver);
+//         ret = false;
+//     }
+// #endif
     return ret;
 }
 #else

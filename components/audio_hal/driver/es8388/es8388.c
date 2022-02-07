@@ -32,6 +32,22 @@
 #include "headphone_detect.h"
 #endif
 
+#ifdef CONFIG_ESP_LYRAT_V4_3_BOARD_BYT
+#include "headphone_detect.h"
+#endif
+
+#ifdef CONFIG_ESP_LYRAT_V4_3_BOARD_BYT_V102
+#include "headphone_detect.h"
+#endif
+
+#define WRITE_BIT I2C_MASTER_WRITE              /*!< I2C master write */
+#define READ_BIT I2C_MASTER_READ                /*!< I2C master read */
+#define ACK_CHECK_EN 0x1                        /*!< I2C master will check ack from slave*/
+#define ACK_CHECK_DIS 0x0                       /*!< I2C master will not check ack from slave */
+#define ACK_VAL 0x0                             /*!< I2C ack value */
+#define NACK_VAL 0x1                            /*!< I2C nack value */
+
+
 static const char *ES_TAG = "ES8388_DRIVER";
 static i2c_bus_handle_t i2c_handle;
 
@@ -40,6 +56,8 @@ static i2c_bus_handle_t i2c_handle;
         ESP_LOGE(ES_TAG, format, ##__VA_ARGS__); \
         return b;\
     }
+esp_err_t es8388_i2c_master_read(uint8_t slave_addr, uint8_t *data_rd, uint8_t size);
+esp_err_t es8388_i2c_master_write(uint8_t slave_addr, uint8_t *data_wr, uint8_t size);
 
 audio_hal_func_t AUDIO_CODEC_ES8388_DEFAULT_HANDLE = {
     .audio_codec_initialize = es8388_init,
@@ -49,9 +67,50 @@ audio_hal_func_t AUDIO_CODEC_ES8388_DEFAULT_HANDLE = {
     .audio_codec_set_mute = es8388_set_voice_mute,
     .audio_codec_set_volume = es8388_set_voice_volume,
     .audio_codec_get_volume = es8388_get_voice_volume,
+	.audio_codec_set_adc_input = es8388_set_adc_input,	/* Chọn kênh đầu vào Line1 - MIC/Line2 - AUX */
+    .audio_codec_set_adc_input_gain = es8388_set_adc_input_gain,
+    .codec_i2c_master_read = es8388_i2c_master_read,
+    .codec_i2c_master_write = es8388_i2c_master_write,
     .audio_hal_lock = NULL,
     .handle = NULL,
 };
+
+/**
+ * @brief test code to read esp-i2c-slave without register address
+ *        We need to fill the buffer of esp slave device, then master can read them out.
+ *
+ * _______________________________________________________________________________________
+ * | start | slave_addr + rd_bit +ack | read n-1 bytes + ack | read 1 byte + nack | stop |
+ * --------|--------------------------|----------------------|--------------------|------|
+ *
+ */
+esp_err_t es8388_i2c_master_read(uint8_t slave_addr, uint8_t *data_rd, uint8_t size)
+{
+    if (size == 0) {
+        return ESP_OK;
+    }
+    return i2c_bus_read_bytes(i2c_handle, slave_addr, NULL, 0, data_rd, size);
+}
+
+/**
+ * @brief Test code to write esp-i2c-slave without register address
+ *        Master device write data to slave(both esp32),
+ *        the data will be stored in slave buffer.
+ *        We can read them out from slave buffer.
+ *
+ * ___________________________________________________________________
+ * | start | slave_addr + wr_bit + ack | write n bytes + ack  | stop |
+ * --------|---------------------------|----------------------|------|
+ *
+ */
+esp_err_t es8388_i2c_master_write(uint8_t slave_addr, uint8_t *data_wr, uint8_t size)
+{
+	if (size == 0) {
+		return ESP_FAIL;
+	}
+
+	return i2c_bus_write_bytes(i2c_handle, slave_addr, NULL, 0, data_wr, size);
+}
 
 static esp_err_t es_write_reg(uint8_t slave_addr, uint8_t reg_add, uint8_t data)
 {
@@ -116,8 +175,8 @@ static int es8388_set_adc_dac_volume(int mode, int volume, int dot)
     dot = (dot >= 5 ? 1 : 0);
     volume = (-volume << 1) + dot;
     if (mode == ES_MODULE_ADC || mode == ES_MODULE_ADC_DAC) {
-        res |= es_write_reg(ES8388_ADDR, ES8388_ADCCONTROL8, volume);
-        res |= es_write_reg(ES8388_ADDR, ES8388_ADCCONTROL9, volume);  //ADC Right Volume=0db
+        res |= es_write_reg(ES8388_ADDR, ES8388_ADCCONTROL8, volume);	// ADC Left Volume (LADCVOL)
+        res |= es_write_reg(ES8388_ADDR, ES8388_ADCCONTROL9, volume);  	// ADC Right Volume = 0db
     }
     if (mode == ES_MODULE_DAC || mode == ES_MODULE_ADC_DAC) {
         res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL5, volume);
@@ -235,6 +294,10 @@ esp_err_t es8388_deinit(void)
     i2c_bus_delete(i2c_handle);
 #ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
     headphone_detect_deinit();
+#endif /* CONFIG_ESP_LYRAT_V4_3_BOARD */
+
+#ifdef CONFIG_ESP_LYRAT_V4_3_BOARD_BYT
+		headphone_detect_deinit();
 #endif
 
     return res;
@@ -248,8 +311,15 @@ esp_err_t es8388_deinit(void)
 esp_err_t es8388_init(audio_hal_codec_config_t *cfg)
 {
     int res = 0;
+
+	ESP_LOGI(ES_TAG, "es8388_init...");
+	
 #ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
     headphone_detect_init(get_headphone_detect_gpio());
+#endif
+
+#ifdef CONFIG_ESP_LYRAT_V4_3_BOARD_BYT
+		headphone_detect_init(get_headphone_detect_gpio());
 #endif
 
     res = i2c_init(); // ESP32 in master mode
@@ -281,23 +351,24 @@ esp_err_t es8388_init(audio_hal_codec_config_t *cfg)
         tmp = DAC_OUTPUT_LOUT1 | DAC_OUTPUT_LOUT2 | DAC_OUTPUT_ROUT1 | DAC_OUTPUT_ROUT2;
     }
     res |= es_write_reg(ES8388_ADDR, ES8388_DACPOWER, tmp);  //0x3c Enable DAC and Enable Lout/Rout/1/2
-    /* adc */
-    res |= es_write_reg(ES8388_ADDR, ES8388_ADCPOWER, 0xFF);
-    res |= es_write_reg(ES8388_ADDR, ES8388_ADCCONTROL1, 0xbb); // MIC Left and Right channel PGA gain
+    
+    /* Cấu hình ADC */
+    res |= es_write_reg(ES8388_ADDR, ES8388_ADCPOWER, 0xFF);	//power down adc and line in
+    res |= es_write_reg(ES8388_ADDR, ES8388_ADCCONTROL1, 0x88); //0x88 = +24dB MIC Left and Right channel PGA gain : MicAmpL[7:4] - MicAmpR[3:0]
     tmp = 0;
-    if (AUDIO_HAL_ADC_INPUT_LINE1 == cfg->adc_input) {
+    if (AUDIO_HAL_ADC_INPUT_LINE1 == cfg->adc_input) { /* Line 1 - MIC */
         tmp = ADC_INPUT_LINPUT1_RINPUT1;
-    } else if (AUDIO_HAL_ADC_INPUT_LINE2 == cfg->adc_input) {
+    } else if (AUDIO_HAL_ADC_INPUT_LINE2 == cfg->adc_input) { /* Line 2 - Aux input */
         tmp = ADC_INPUT_LINPUT2_RINPUT2;
     } else {
-        tmp = ADC_INPUT_DIFFERENCE;
+        tmp = ADC_INPUT_DIFFERENCE; /* Trường hợp này âm thanh tệ không nghe được! */
     }
     res |= es_write_reg(ES8388_ADDR, ES8388_ADCCONTROL2, tmp);  //0x00 LINSEL & RINSEL, LIN1/RIN1 as ADC Input; DSSEL,use one DS Reg11; DSR, LINPUT1-RINPUT1
     res |= es_write_reg(ES8388_ADDR, ES8388_ADCCONTROL3, 0x02);
     res |= es_write_reg(ES8388_ADDR, ES8388_ADCCONTROL4, 0x0d); // Left/Right data, Left/Right justified mode, Bits length, I2S format
     res |= es_write_reg(ES8388_ADDR, ES8388_ADCCONTROL5, 0x02);  //ADCFsMode,singel SPEED,RATIO=256
     //ALC for Microphone
-    res |= es8388_set_adc_dac_volume(ES_MODULE_ADC, 0, 0);      // 0db
+    res |= es8388_set_adc_dac_volume(ES_MODULE_ADC, 0, 0);      // 0db //Input ADC gain 0db, phinht: change 0db -> -5.0dB (giảm gain đầu vào MIC/LINE)
     res |= es_write_reg(ES8388_ADDR, ES8388_ADCPOWER, 0x09); //Power on ADC, Enable LIN&RIN, Power off MICBIAS, set int1lp to low power mode
     /* enable es8388 PA */
     es8388_pa_power(true);
@@ -349,6 +420,7 @@ esp_err_t es8388_set_voice_volume(int volume)
     volume /= 3;
     res = es_write_reg(ES8388_ADDR, ES8388_DACCONTROL24, volume);
     res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL25, volume);
+	/* Tạm thời không dùng OUT2 */
     res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL26, 0);
     res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL27, 0);
     return res;
@@ -463,9 +535,70 @@ esp_err_t es8388_config_adc_input(es_adc_input_t input)
     esp_err_t res;
     uint8_t reg = 0;
     res = es_read_reg(ES8388_ADCCONTROL2, &reg);
-    reg = reg & 0x0f;
+    reg = reg & 0x0f; // Clear mode cũ, 4 bit cao
+	// Line 1: 0x00, Line 2: 0x50
     res |= es_write_reg(ES8388_ADDR, ES8388_ADCCONTROL2, reg | input);
     return res;
+}
+
+esp_err_t es8388_set_adc_input(audio_hal_adc_input_t input)
+{
+    esp_err_t res = ESP_FAIL;
+
+	if(input == AUDIO_HAL_ADC_INPUT_LINE1) {
+		res = es8388_config_adc_input(ADC_INPUT_LINPUT1_RINPUT1);
+
+		/** phinht: select left/right ADC input (after mic amplifier) for output mix = 0x1B
+		* Phải chọn chế độ này để khuếch đại tín hiệu đầu vào (MIC/LINE) ra loa mới nghe to rõ được
+		* Nếu chọn 0x00 LIN1&RIN1,  0x09 LIN2&RIN2 sẽ passthru trực tiếp ADC->DAC -> MIC không nghe thấy gì dù có
+		* thiết lập ES8388_ADCCONTROL1 = 0x88 = +24dB !!!
+		*/
+		res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL16, 0x1B); // 0x00 audio on LIN1&RIN1,  0x09 LIN2&RIN2 by pass enable
+
+		//phinht: option adjust MIC L/R Gain -> phải để GAIN thì mới nghe thấy MIC
+		res |= es_write_reg(ES8388_ADDR, ES8388_ADCCONTROL1, 0x88); //0x88 = +24dB MIC Left and Right channel PGA gain : MicAmpL[7:4] - MicAmpR[3:0]
+	}
+	else if(input == AUDIO_HAL_ADC_INPUT_LINE2) {
+		res = es8388_config_adc_input(ADC_INPUT_LINPUT2_RINPUT2);
+
+		/** phinht: select left/right ADC input (after mic amplifier) for output mix = 0x1B
+		* Phải chọn chế độ này để khuếch đại tín hiệu đầu vào (MIC/LINE) ra loa mới nghe to rõ được
+		* Nếu chọn 0x00 LIN1&RIN1,  0x09 LIN2&RIN2 sẽ passthru trực tiếp ADC->DAC -> MIC không nghe thấy gì!!!
+		*/
+		res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL16, 0x1B); // 0x00 audio on LIN1&RIN1,  0x09 LIN2&RIN2 by pass enable
+	}
+	else
+		ESP_LOGE(ES_TAG, "set_adc_input: input's not supported!");
+
+	ESP_LOGI(ES_TAG, "set_adc_input -> %s : %s", 
+		(input == AUDIO_HAL_ADC_INPUT_LINE1)? "LINE1" : (input == AUDIO_HAL_ADC_INPUT_LINE2)? "LINE2" : "NA",
+		res == ESP_OK ? "OK" : "FAIL");
+	
+    return res;
+}
+
+/**
+* Test thay đổi ADC gain thanh ghi 16, 17
+* Gain: -96dB -> 0dB, mỗi đơn vị tương ứng -0.5dB -> mức set: 0 - 192
+* Chỉ có tác dụng với mode ENCODE. ko tác dụng với mode Passthru
+*/
+esp_err_t es8388_set_adc_input_gain(int volume)
+{
+	int res = 0;
+
+	if(volume < 0) volume = 0;
+	if(volume > 96) volume = 96;
+	int inputVolume = 96 - volume;	/* Đảo 100% vol = 0dB, 0% vol = -96dB */ 
+
+	ESP_LOGI(ES_TAG, "Change gain to -%d dB", inputVolume);
+	
+	/* Scale mức volume 0 - 100 <=> 0 - -96dB -> 1 đơn vị volume = -1dB */
+	inputVolume *= 2;
+
+	res |= es_write_reg(ES8388_ADDR, ES8388_ADCCONTROL8, inputVolume);	//ADC Left Volume (LADCVOL)
+	res |= es_write_reg(ES8388_ADDR, ES8388_ADCCONTROL9, inputVolume);	//ADC Right Volume (RADCVOL)
+		
+	return res;
 }
 
 /**
@@ -533,6 +666,8 @@ esp_err_t es8388_config_i2s(audio_hal_codec_mode_t mode, audio_hal_codec_i2s_ifa
 
 void es8388_pa_power(bool enable)
 {
+	/* Mạch Bytech không sử dụng PA IC */
+#ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
     gpio_config_t  io_conf;
     memset(&io_conf, 0, sizeof(io_conf));
     io_conf.intr_type = GPIO_PIN_INTR_DISABLE;
@@ -546,4 +681,5 @@ void es8388_pa_power(bool enable)
     } else {
         gpio_set_level(get_pa_enable_gpio(), 0);
     }
+#endif   
 }
