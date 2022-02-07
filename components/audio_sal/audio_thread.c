@@ -74,7 +74,7 @@ esp_err_t audio_thread_create(audio_thread_t *p_handle, const char *name, void(*
         }
     } else {
         if (xTaskCreatePinnedToCore(main_func, name, stack, arg, prio, (xTaskHandle)p_handle, core_id) != pdPASS) {
-            ESP_LOGE(TAG, "Error creating task %s", name);
+            ESP_LOGE(TAG, "Error creating task %s size %d", name, stack);
             goto audio_thread_create_error;
         }
     }

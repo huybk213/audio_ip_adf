@@ -88,4 +88,14 @@ set(COMPONENT_SRCS
 )
 endif()
 
+
+if (CONFIG_ESP_LYRAT_V4_3_BOARD_BYT_AUDIO_IP)
+message(STATUS "Current board name is " CONFIG_ESP_LYRAT_V4_3_BOARD_BYT_AUDIO_IP)
+list(APPEND COMPONENT_ADD_INCLUDEDIRS ./lyrat_v4_3_byt_audio_ip)
+set(COMPONENT_SRCS
+./lyrat_v4_3_byt_audio_ip/board.c
+./lyrat_v4_3_byt_audio_ip/board_pins_config.c
+)
+endif()
+
 register_component()

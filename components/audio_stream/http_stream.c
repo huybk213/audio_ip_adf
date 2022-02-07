@@ -340,7 +340,7 @@ _stream_open_begin:
     if (uri == NULL) {
         if (http->is_playlist_resolved && http->enable_playlist_parser) {
             if (dispatch_hook(self, HTTP_STREAM_FINISH_PLAYLIST, NULL, 0) != ESP_OK) {
-                ESP_LOGE(TAG, "Next track Failed to process user callback");
+                ESP_LOGE(TAG, "HTTP_STREAM_FINISH_PLAYLIST Failed to process user callback");
                 return ESP_FAIL;
             }
             goto _stream_open_begin;
@@ -436,7 +436,11 @@ _stream_redirect:
     }
     if (status_code != 200
         && (esp_http_client_get_status_code(http->client) != 206)) {
-        ESP_LOGE(TAG, "Invalid HTTP stream, status code = %d", status_code);
+        ESP_LOGE(TAG, "huytv Invalid HTTP stream, status code = %d", status_code);
+        if (status_code == 404)
+        {
+            dispatch_hook(self, HTTP_STREAM_FINISH_ON_404_NOT_FOUND, NULL, 0);
+        }
         if (http->enable_playlist_parser) {
             hls_playlist_clear(http->playlist);
             http->is_playlist_resolved = false;
@@ -537,15 +541,17 @@ static int _http_read(audio_element_handle_t self, char *buffer, int len, TickTy
         }
     }
     if (rlen <= 0) {
+#if CONFIG_ESP_ADF_GET_HTTP_ERROR_NO
         http->_errno = esp_http_client_get_errno(http->client);
         ESP_LOGW(TAG, "No more data,errno:%d, total_bytes:%llu, rlen = %d", http->_errno, info.byte_pos, rlen);
         if (http->_errno != 0) {  // Error occuered, reset connection
             ESP_LOGW(TAG, "Got %d errno(%s)", http->_errno, strerror(http->_errno));
             return http->_errno;
         }
+#endif
         if (http->auto_connect_next_track) {
             if (dispatch_hook(self, HTTP_STREAM_FINISH_PLAYLIST, NULL, 0) != ESP_OK) {
-                ESP_LOGE(TAG, "Failed to process user callback");
+                ESP_LOGE(TAG, "HTTP_STREAM_FINISH_PLAYLIST Failed to process user callback");
                 return ESP_FAIL;
             }
         } else {
@@ -567,7 +573,7 @@ static int _http_write(audio_element_handle_t self, char *buffer, int len, TickT
     http_stream_t *http = (http_stream_t *)audio_element_getdata(self);
     int wrlen = dispatch_hook(self, HTTP_STREAM_ON_REQUEST, buffer, len);
     if (wrlen < 0) {
-        ESP_LOGE(TAG, "HTTP_STREAM_ON_REQUEST Failed to process user callback");
+        ESP_LOGE(TAG, "_http_write Failed to process user callback");
         return ESP_FAIL;
     }
     if (wrlen > 0) {
@@ -575,8 +581,10 @@ static int _http_write(audio_element_handle_t self, char *buffer, int len, TickT
     }
 
     if ((wrlen = esp_http_client_write(http->client, buffer, len)) <= 0) {
+#if CONFIG_ESP_ADF_GET_HTTP_ERROR_NO
         http->_errno = esp_http_client_get_errno(http->client);
         ESP_LOGE(TAG, "Failed to write data to http stream, wrlen=%d, errno=%d(%s)", wrlen, http->_errno, strerror(http->_errno));
+#endif
     }
     return wrlen;
 }

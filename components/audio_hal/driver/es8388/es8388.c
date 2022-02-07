@@ -40,6 +40,11 @@
 #include "headphone_detect.h"
 #endif
 
+#ifdef CONFIG_ESP_LYRAT_V4_3_BOARD_BYT_AUDIO_IP
+#include "headphone_detect.h"
+#endif
+
+
 #define WRITE_BIT I2C_MASTER_WRITE              /*!< I2C master write */
 #define READ_BIT I2C_MASTER_READ                /*!< I2C master read */
 #define ACK_CHECK_EN 0x1                        /*!< I2C master will check ack from slave*/
@@ -300,6 +305,9 @@ esp_err_t es8388_deinit(void)
 		headphone_detect_deinit();
 #endif
 
+#ifdef CONFIG_ESP_LYRAT_V4_3_BOARD_BYT_AUDIO_IP
+		headphone_detect_deinit();
+#endif
     return res;
 }
 
