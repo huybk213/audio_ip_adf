@@ -1,9 +1,9 @@
-[submodule "esp-idf"]
-	path = esp-idf
-	url = https://github.com/huybk213/audio_ip_idf
 [submodule "components/esp-adf-libs"]
 	path = components/esp-adf-libs
 	url = https://github.com/espressif/esp-adf-libs
 [submodule "components/esp-sr"]
 	path = components/esp-sr
 	url = https://github.com/espressif/esp-sr.git
+[submodule "fire_safe_esp32_sdk"]
+	path = fire_safe_esp32_sdk
+	url = https://github.com/ByTechJSC/fire_safe_esp32_sdk
