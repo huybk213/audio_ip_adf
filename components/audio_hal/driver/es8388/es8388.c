@@ -706,7 +706,7 @@ esp_err_t es8388_bypass_lin_rin_to_lout_rout(void)
     // Lmix sel    
     uint8_t reg = 0;
     res = es_read_reg(ES8388_DACCONTROL16, &reg);
-    res &= 0xC0;
+    reg &= 0xC0;
     reg |= 0x09; // 0x00 audio on LIN1&RIN1,  0x09 LIN2&RIN2 by pass enable
     res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL16, reg); 
     return res;
