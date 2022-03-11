@@ -76,6 +76,7 @@ audio_hal_func_t AUDIO_CODEC_ES8388_DEFAULT_HANDLE = {
     .audio_codec_set_adc_input_gain = es8388_set_adc_input_gain,
     .codec_i2c_master_read = es8388_i2c_master_read,
     .codec_i2c_master_write = es8388_i2c_master_write,
+    .audio_codec_bypass_lin_rin_to_lout_rout = es8388_bypass_lin_rin_to_lout_rout,
     .audio_hal_lock = NULL,
     .handle = NULL,
 };
@@ -690,4 +691,23 @@ void es8388_pa_power(bool enable)
         gpio_set_level(get_pa_enable_gpio(), 0);
     }
 #endif   
+}
+
+esp_err_t es8388_bypass_lin_rin_to_lout_rout(void)
+{
+    esp_err_t res = ESP_OK;
+    // Enable lout, rout power
+    res |= es_write_reg(ES8388_ADDR, ES8388_DACPOWER, 0x3c);   //power up dac and line out
+    res |= es8388_set_voice_mute(false);
+    // Bypass lin, rin to lout-rout
+    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL17, (1 << 6));    // See datasheet
+    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL20, (1 << 6));    // See datasheet
+
+    // Lmix sel    
+    uint8_t reg = 0;
+    res = es_read_reg(ES8388_DACCONTROL16, &reg);
+    res &= 0xC0;
+    reg |= 0x09; // 0x00 audio on LIN1&RIN1,  0x09 LIN2&RIN2 by pass enable
+    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL16, reg); 
+    return res;
 }

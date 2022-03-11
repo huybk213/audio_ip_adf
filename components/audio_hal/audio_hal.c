@@ -159,6 +159,16 @@ esp_err_t audio_hal_set_input_gain(audio_hal_handle_t audio_hal, int input_gain)
     return ret;
 }
 
+esp_err_t audio_hal_bypass_lin_rin_to_lout_rout(audio_hal_handle_t audio_hal)
+{
+    esp_err_t ret;
+    AUDIO_HAL_CHECK_NULL(audio_hal, "audio_hal handle is null", -1);
+    mutex_lock(audio_hal->audio_hal_lock);
+    ret = audio_hal->audio_codec_bypass_lin_rin_to_lout_rout();
+    mutex_unlock(audio_hal->audio_hal_lock);
+    return ret;
+}
+
 /*!< i2c read slave */
 esp_err_t audio_hal_i2c_master_read(audio_hal_handle_t audio_hal, uint8_t slave_addr, uint8_t *data_rd, uint8_t size)				
 {

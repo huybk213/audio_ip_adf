@@ -308,6 +308,15 @@ esp_err_t es8388_ctrl_state(audio_hal_codec_mode_t mode, audio_hal_ctrl_t ctrl_s
  */
 void es8388_pa_power(bool enable);
 
+/**
+ * @brief Bypass Lin,Rin to Lout-Rout
+ *
+ *
+ * @return
+ *      - esp_err_t
+ */
+esp_err_t es8388_bypass_lin_rin_to_lout_rout(void);
+
 #ifdef __cplusplus
 }
 #endif
