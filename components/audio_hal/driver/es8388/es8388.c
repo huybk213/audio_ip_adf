@@ -707,7 +707,13 @@ esp_err_t es8388_bypass_lin_rin_to_lout_rout(void)
     uint8_t reg = 0;
     res = es_read_reg(ES8388_DACCONTROL16, &reg);
     reg &= 0xC0;
-    reg |= 0x09; // 0x00 audio on LIN1&RIN1,  0x09 LIN2&RIN2 by pass enable
-    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL16, reg); 
+    reg = 0x09; // 0x00 audio on LIN1&RIN1,  0x09 LIN2&RIN2 by pass enable
+    // res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL16, reg); 
+
+    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL16, 0x1B); // 0x00 audio on LIN1&RIN1,  0x09 LIN2&RIN2 by pass enable
+
+		//phinht: option adjust MIC L/R Gain -> phải để GAIN thì mới nghe thấy MIC
+    res |= es_write_reg(ES8388_ADDR, ES8388_ADCCONTROL1, 0x88); //0x88 = +24dB MIC Left and Right channel PGA gain : MicAmpL[7:4] - MicAmpR[3:0]
+
     return res;
 }
