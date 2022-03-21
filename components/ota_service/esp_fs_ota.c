@@ -220,6 +220,7 @@ esp_err_t esp_fs_ota_perform(esp_fs_ota_handle_t fs_ota_handle)
 esp_err_t esp_fs_ota_finish(esp_fs_ota_handle_t fs_ota_handle)
 {
     esp_fs_ota_t *handle = (esp_fs_ota_t *)fs_ota_handle;
+    esp_err_t err = ESP_OK;
     if (handle == NULL) {
         return ESP_ERR_INVALID_ARG;
     }
@@ -227,11 +228,17 @@ esp_err_t esp_fs_ota_finish(esp_fs_ota_handle_t fs_ota_handle)
         return ESP_FAIL;
     }
 
-    esp_err_t err = ESP_OK;
     switch (handle->state) {
         case ESP_FS_OTA_SUCCESS:
         case ESP_FS_OTA_IN_PROGRESS:
             err = esp_ota_end(handle->update_handle);
+            if (handle->ota_upgrade_buf) {
+                audio_free(handle->ota_upgrade_buf);
+            }
+            if (handle->fp) {
+                fclose(handle->fp);
+            }
+            break;
         case ESP_FS_OTA_BEGIN:
             if (handle->ota_upgrade_buf) {
                 audio_free(handle->ota_upgrade_buf);
