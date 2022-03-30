@@ -444,7 +444,7 @@ audio_element_err_t audio_element_output(audio_element_handle_t el, char *buffer
                 audio_element_report_status(el, AEL_STATUS_ERROR_OUTPUT);
                 break;
             case AEL_IO_TIMEOUT:
-                ESP_LOGW(TAG, "OUT-[%s] AEL_IO_TIMEOUT", el->tag);
+                ESP_LOGD(TAG, "OUT-[%s] AEL_IO_TIMEOUT", el->tag);
                 break;
             default:
                 ESP_LOGE(TAG, "OUT-[%s] Output return not support,ret:%d", el->tag, output_len);
