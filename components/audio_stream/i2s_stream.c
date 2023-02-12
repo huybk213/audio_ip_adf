@@ -218,6 +218,9 @@ static int _i2s_read(audio_element_handle_t self, char *buffer, int len, TickTyp
         }
 #endif
     }
+    else {
+        ESP_LOGW(TAG, "_i2s_read : read %d bytes", bytes_read);
+    }
     return bytes_read;
 }
 
@@ -240,7 +243,14 @@ static int _i2s_write(audio_element_handle_t self, char *buffer, int len, TickTy
         }
 #endif
     }
+    else {
+        ESP_LOGW(TAG, "_i2s_write : write %d bytes", len);
+    }
     i2s_write(i2s->config.i2s_port, buffer, len, &bytes_written, ticks_to_wait);
+    if (bytes_written != len)
+    {
+        ESP_LOGW(TAG, "_i2s_write : written %u/%d bytes", bytes_written, len);
+    }
     return bytes_written;
 }
 

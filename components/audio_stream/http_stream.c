@@ -365,8 +365,10 @@ _stream_open_begin:
         };
         if (http->stream_type == AUDIO_STREAM_WRITER)
         {
+            http_cfg.buffer_size_tx = 4096;
             http_cfg.method = HTTP_METHOD_PUT;      // HuyTV Bytech server upstream only accept PUT method
         }
+        ESP_LOGW(TAG, "HTTP Put tx buffer size %u bytes", http_cfg.buffer_size_tx);
         http->client = esp_http_client_init(&http_cfg);
         AUDIO_MEM_CHECK(TAG, http->client, return ESP_ERR_NO_MEM);
     } else {
@@ -573,14 +575,18 @@ static int _http_write(audio_element_handle_t self, char *buffer, int len, TickT
     http_stream_t *http = (http_stream_t *)audio_element_getdata(self);
     int wrlen = dispatch_hook(self, HTTP_STREAM_ON_REQUEST, buffer, len);
     if (wrlen < 0) {
-        ESP_LOGE(TAG, "_http_write Failed to process user callback");
+        ESP_LOGE(TAG, "_http_write Failed to process user callback, len %d", len);
         return ESP_FAIL;
     }
     if (wrlen > 0) {
+        if (len != wrlen) {
+            ESP_LOGE(TAG, "http_write failed %d/%d", len, wrlen);
+        }
         return wrlen;
     }
 
     if ((wrlen = esp_http_client_write(http->client, buffer, len)) <= 0) {
+        ESP_LOGE(TAG, "_http_write failed %d bytes", wrlen);
 #if CONFIG_ESP_ADF_GET_HTTP_ERROR_NO
         http->_errno = esp_http_client_get_errno(http->client);
         ESP_LOGE(TAG, "Failed to write data to http stream, wrlen=%d, errno=%d(%s)", wrlen, http->_errno, strerror(http->_errno));
@@ -619,6 +625,7 @@ static int _http_process(audio_element_handle_t self, char *in_buffer, int in_le
             audio_element_multi_output(self, in_buffer, r_size, 0);
         }
     } else {
+        ESP_LOGE(TAG, "HTTP input ringbuffer is zero");
         w_size = r_size;
     }
     return w_size;
