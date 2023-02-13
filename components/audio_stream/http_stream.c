@@ -42,7 +42,7 @@
 
 static const char *TAG = "HTTP_STREAM";
 #define MAX_PLAYLIST_LINE_SIZE (512)
-#define HTTP_STREAM_BUFFER_SIZE (2048)
+#define HTTP_STREAM_RX_BUFFER_SIZE (2048)
 #define HTTP_MAX_CONNECT_TIMES  (5)
 
 typedef struct http_stream {
@@ -361,7 +361,7 @@ _stream_open_begin:
             .event_handler = _http_event_handle,
             .user_data = self,
             .timeout_ms = 30 * 1000,
-            .buffer_size = HTTP_STREAM_BUFFER_SIZE,
+            .buffer_size = HTTP_STREAM_RX_BUFFER_SIZE,
         };
         if (http->stream_type == AUDIO_STREAM_WRITER)
         {

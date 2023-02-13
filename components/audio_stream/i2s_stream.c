@@ -279,6 +279,10 @@ static int _i2s_process(audio_element_handle_t self, char *in_buffer, int in_len
         audio_element_multi_output(self, in_buffer, r_size, 0);
         w_size = audio_element_output(self, in_buffer, r_size);
         audio_element_update_byte_pos(self, w_size);
+        if (w_size != r_size)
+        {
+            ESP_LOGE(TAG, "[_i2s_process] Write output rb failed %u/%u", w_size, r_size);
+        }
     } else {
         esp_err_t ret = i2s_stream_clear_dma_buffer(self);
         if (ret != ESP_OK) {
