@@ -59,7 +59,7 @@ typedef struct {
 #define I2S_STREAM_BUF_SIZE             (2048)
 #define I2S_STREAM_TASK_PRIO            (23)
 #define I2S_STREAM_TASK_CORE            (0)
-#define I2S_STREAM_RINGBUFFER_SIZE      (8 * 1024)
+#define I2S_STREAM_RINGBUFFER_SIZE      (12 * 1024)
 
 #if (ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 3, 0))
 #define I2S_STREAM_CFG_DEFAULT() {                                              \

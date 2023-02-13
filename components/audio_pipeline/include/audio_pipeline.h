@@ -40,7 +40,7 @@ typedef struct audio_pipeline_cfg {
     int rb_size;        /*!< Audio Pipeline ringbuffer size */
 } audio_pipeline_cfg_t;
 
-#define DEFAULT_PIPELINE_RINGBUF_SIZE    (8*1024)
+#define DEFAULT_PIPELINE_RINGBUF_SIZE    (24*1024)
 
 #define DEFAULT_AUDIO_PIPELINE_CONFIG() {\
     .rb_size            = DEFAULT_PIPELINE_RINGBUF_SIZE,\
