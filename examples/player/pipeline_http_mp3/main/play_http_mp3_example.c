@@ -27,11 +27,7 @@
 #include "periph_wifi.h"
 #include "board.h"
 
-#if __has_include("esp_idf_version.h")
-#include "esp_idf_version.h"
-#else
-#define ESP_IDF_VERSION_VAL(major, minor, patch) 1
-#endif
+#include "audio_idf_version.h"
 
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0))
 #include "esp_netif.h"
@@ -106,7 +102,8 @@ void app_main(void)
     esp_periph_handle_t wifi_handle = periph_wifi_init(&wifi_cfg);
     esp_periph_start(set, wifi_handle);
     periph_wifi_wait_for_connected(wifi_handle, portMAX_DELAY);
-
+    
+    // Example of using an audio event -- START
     ESP_LOGI(TAG, "[ 4 ] Set up  event listener");
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
     audio_event_iface_handle_t evt = audio_event_iface_init(&evt_cfg);
@@ -150,6 +147,7 @@ void app_main(void)
             break;
         }
     }
+    // Example of using an audio event -- END
 
     ESP_LOGI(TAG, "[ 6 ] Stop audio_pipeline");
     audio_pipeline_stop(pipeline);

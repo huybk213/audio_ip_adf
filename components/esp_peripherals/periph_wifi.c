@@ -34,10 +34,12 @@
 #include "wifibleconfig.h"
 #include "audio_mem.h"
 
-#if __has_include("esp_idf_version.h")
-#include "esp_idf_version.h"
-#else
-#define ESP_IDF_VERSION_VAL(major, minor, patch) 1
+#include "audio_idf_version.h"
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0))
+#include "nvs_flash.h"
+#include "esp_netif.h"
+#include "esp_wifi_netif.h"
+static esp_netif_t *sta = NULL;
 #endif
 
 static const char *TAG = "PERIPH_WIFI";
@@ -84,7 +86,7 @@ esp_err_t periph_wifi_wait_for_connected(esp_periph_handle_t periph, TickType_t 
     if (connected_bit & CONNECTED_BIT) {
         return ESP_OK;
     }
-#ifdef CONFIG_BLUEDROID_ENABLED
+#if defined(CONFIG_BTDM_CTRL_MODE_BLE_ONLY) || defined(CONFIG_BTDM_CTRL_MODE_BTDM)
     if (periph_wifi->config_mode == WIFI_CONFIG_BLUEFI) {
         ble_config_stop();
     }
@@ -253,7 +255,7 @@ esp_err_t periph_wifi_config_start(esp_periph_handle_t periph, periph_wifi_confi
         //todo : add wps
         return ESP_OK;
     } else if (mode == WIFI_CONFIG_BLUEFI) {
-#ifdef CONFIG_BLUEDROID_ENABLED
+#if defined(CONFIG_BTDM_CTRL_MODE_BLE_ONLY) || defined(CONFIG_BTDM_CTRL_MODE_BTDM)
         ble_config_start(periph);
 #endif
         return ESP_OK;
@@ -389,7 +391,9 @@ static esp_err_t _wifi_init(esp_periph_handle_t self)
     }
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
     ESP_ERROR_CHECK(esp_event_loop_create_default());
-#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0))
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0))
+    sta = esp_netif_create_default_wifi_sta();
+#elif (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0))
     esp_netif_create_default_wifi_sta();
 #endif
     ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &_wifi_event_callback, self));
@@ -468,6 +472,10 @@ static esp_err_t _wifi_destroy(esp_periph_handle_t self)
     }
     audio_free(periph_wifi);
     g_periph = NULL;
+
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0))
+    esp_netif_destroy_default_wifi(sta);
+#endif
     return ESP_OK;
 }
 

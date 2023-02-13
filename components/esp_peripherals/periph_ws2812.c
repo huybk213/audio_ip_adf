@@ -33,8 +33,11 @@
 #include "periph_ws2812.h"
 #include "esp_peripherals.h"
 #include "soc/dport_access.h"
+#if !defined CONFIG_IDF_TARGET_ESP32C3
 #include "soc/dport_reg.h"
+#endif
 #include "driver/rmt.h"
+#include "audio_idf_version.h"
 
 static const char *TAG = "PERIPH_WS2812";
 
@@ -108,7 +111,9 @@ static esp_err_t ws2812_init_rmt_channel(int rmt_channel, int gpio_num)
     rmt_set_mem_pd(RMTCHANNEL, false);
     rmt_set_tx_loop_mode(RMTCHANNEL, false);
     rmt_set_source_clk(RMTCHANNEL, RMT_BASECLK_APB);
+#if (ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 3, 0))
     rmt_set_intr_enable_mask(BIT(0) | BIT(24));
+#endif
     return ESP_OK;
 }
 

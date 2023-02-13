@@ -1,41 +1,50 @@
+# Chinese Text-to-Speech (TTS) Service
 
-# _Chinese TTS Stream Example_
+- [中文版本](./README_CN.md)
+- Regular Example: ![alt text](../../../docs/_static/level_regular.png "Regular Example")
 
-This example is to convert Chinese text into Chinese pronunciation. If the input text is a mixture of Chinese and English, the English words will be read letter by letter. If the customer needs English TTS(Text To Speech) customization, you can send an email to the business for individual customization.
+
+## Example Brief
+
+This example demonstrates how to convert Chinese text into Chinese speech. If the input text is a mixture of Chinese and English, the English words will be read letter by letter. If you need the English text-to-speech (TTS) service, you can send an email to our Business Support team for individual customization.
 
 
-## 1. How to use example
+## Environment Setup
 
-#### Hardware Required
+### Hardware Required
 
-This example is will run on boards marked with green checkbox. Please remember to select the board in menuconfig as discussed is section *Usage* below.
+This example runs on the boards that are marked with a green checkbox in the [table](../../README.md#compatibility-of-examples-with-espressif-audio-boards). Please remember to select the board in menuconfig as discussed in Section [Configuration](#configuration) below.
 
-| Board Name | Getting Started | Chip | Compatible |
-|-------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------:|:-----------------------------------------------------------------:|
-| ESP32-LyraT | [![alt text](../../../docs/_static/esp32-lyrat-v4.3-side-small.jpg "ESP32-LyraT")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "Compatible") |
-| ESP32-LyraTD-MSC | [![alt text](../../../docs/_static/esp32-lyratd-msc-v2.2-small.jpg "ESP32-LyraTD-MSC")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyratd-msc.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "Compatible") |
-| ESP32-LyraT-Mini | [![alt text](../../../docs/_static/esp32-lyrat-mini-v1.2-small.jpg "ESP32-LyraT-Mini")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "Compatible") |
-| ESP32-Korvo-DU1906 | [![alt text](../../../docs/_static/esp32-korvo-du1906-v1.1-small.jpg "ESP32-Korvo-DU1906")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-korvo-du1906.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "Compatible") |
-| ESP32-S2-Kaluga-1 Kit | [![alt text](../../../docs/_static/esp32-s2-kaluga-1-kit-small.png "ESP32-S2-Kaluga-1 Kit")](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html) | <img src="../../../docs/_static/ESP32-S2.svg" height="100" alt="ESP32-S2"> | ![alt text](../../../docs/_static/no-button.png "Compatible") |
+## Build and Flash
 
-## 2. Setup software environment
+### Default IDF Branch
 
-Please refer to [Get Started](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/index.html#get-started).
+This example supports IDF release/v3.3 and later branches. By default, it runs on ADF's built-in branch `$ADF_PATH/esp-idf`.
 
-#### Configure the project
-cmake menuconfig:
+### Configuration
+
+The default board for this example is `ESP32-Lyrat V4.3`. If you need to run this example on other development boards, select the board in menuconfig, such as `ESP32-Lyrat-Mini V1.1`.
+
+```
+menuconfig > Audio HAL > ESP32-Lyrat-Mini V1.1
+```
+
+You can use `GNU make` or `cmake` for configuration.
+
+If you are using `cmake`, run the command below:
 ```
 idf.py menuconfig
 ```
-Or use legacy GNU make:
+
+Or if you are using `GNU make`, run the command below:
 ```
 make menuconfig
 ```
-Select compatible audio board in ``menuconfig > Audio HAL``, then compile the example.
 
-#### Build and Flash
+### Build and Flash
+
 You can use `GNU make` or `cmake` to build the project.
-If you are using make:
+If you are using `GNU make`:
 ```bash
 cd $ADF_PATH/examples/player/pipeline_tts_stream
 make clean
@@ -43,16 +52,16 @@ make menuconfig
 make -j4 all
 ```
 
-Or if you are using cmake:
+Or if you are using `cmake`:
 ```bash
 cd $ADF_PATH/examples/player/pipeline_tts_stream
 idf.py fullclean
 idf.py menuconfig
 idf.py build
 ```
-The firmware downloading flash address refer to follow table.
+Refer to the following table for the firmware flash address.
 
-|Flash address | Bin Path|
+| Flash address | Bin Path |
 |---|---|
 |0x1000 | build/bootloader/bootloader.bin|
 |0x8000 | build/partitions.bin|
@@ -60,17 +69,17 @@ The firmware downloading flash address refer to follow table.
 |0x100000 | components/esp-sr/esp-tts/esp_tts_chinese/esp_tts_voice_data_xiaole.dat|
 
 
-Build the project and flash it to the board, then run monitor tool to view serial output
+Select compatible audio board in ``menuconfig > Audio HAL``, build the project and flash it to the board, then run monitor tool to view serial output.
 
-- Flash `components/esp-tts/esp_tts_chinese/esp_tts_voice_data_xiaole.dat` to partition table address 
+- Flash `components/esp-tts/esp_tts_chinese/esp_tts_voice_data_xiaole.dat` to the partition table address.
 - Then flash the app bin, the board will start playing automatically.
 
 To exit the serial monitor, type ``Ctrl-]``.
 
 
-## 3. Example Output
+## Example Log
 
-After download the follow logs should be output, here:
+A complete log is as follows:
 
 ```
 I (10) boot: ESP-IDF v3.3.2-107-g722043f73-dirty 2nd stage bootloader
@@ -147,8 +156,15 @@ W (3516) AUDIO_ELEMENT: [i2s] Element has not create when AUDIO_ELEMENT_TERMINAT
 ```
 
 
-## 4. Troubleshooting
+## Troubleshooting
 
-- If you encounter a situation where TTS doesn't play sound, try checking to see if the ``esp_tts_voice_data_xiaole.dat`` file has been flashed to the specified address.
+- If the TTS example does not play the speech, please check if the ``esp_tts_voice_data_xiaole.dat`` file has been flashed to the specified address.
 
 
+## Technical Support and Feedback
+Please use the following feedback channels:
+
+* For technical queries, go to the [esp32.com](https://esp32.com/viewforum.php?f=20) forum
+* For a feature request or bug report, create a [GitHub issue](https://github.com/espressif/esp-adf/issues)
+
+We will get back to you as soon as possible.

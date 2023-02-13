@@ -45,10 +45,21 @@ CONFIG_LWIP_MAX_UDP_PCBS=64
 CONFIG_UDP_RECVMBOX_SIZE=64
 CONFIG_TCPIP_TASK_STACK_SIZE=2560
 
-# Increase default app partition size to accommodate console example
+# Increase default app partition size to accommodate voip example
 # by providing new partition table in "partitions_voip_example.csv"
 CONFIG_PARTITION_TABLE_CUSTOM=y
 CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions_voip_example.csv"
 CONFIG_PARTITION_TABLE_CUSTOM_APP_BIN_OFFSET=0x10000
 CONFIG_PARTITION_TABLE_FILENAME="partitions_voip_example.csv"
 CONFIG_APP_OFFSET=0x10000
+
+#
+# Certificate Bundle
+#
+# CONFIG_MBEDTLS_ROM_MD5 is not set
+
+CONFIG_ESP_TLS_INSECURE=y
+CONFIG_ESP_TLS_SKIP_SERVER_CERT_VERIFY=y
+
+CONFIG_ESP_SYSTEM_EVENT_TASK_STACK_SIZE=3072
+

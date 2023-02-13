@@ -28,7 +28,6 @@
 #include <freertos/semphr.h>
 
 #include "esp_log.h"
-#include "recorder_engine.h"
 #include "esp_audio.h"
 #include "audio_element.h"
 #include "audio_pipeline.h"
@@ -45,8 +44,29 @@
 #include "mp3_decoder.h"
 #include "aac_decoder.h"
 #include "http_stream.h"
+#include "audio_idf_version.h"
+
+#include "model_path.h"
+
+#include "audio_recorder.h"
+#include "recorder_sr.h"
 
 static char *TAG = "AUDIO_SETUP";
+
+#ifndef CODEC_ADC_SAMPLE_RATE
+#warning "Please define CODEC_ADC_SAMPLE_RATE first, default value is 48kHz may not correctly"
+#define CODEC_ADC_SAMPLE_RATE    48000
+#endif
+
+#ifndef CODEC_ADC_BITS_PER_SAMPLE
+#warning "Please define CODEC_ADC_BITS_PER_SAMPLE first, default value 16 bits may not correctly"
+#define CODEC_ADC_BITS_PER_SAMPLE  I2S_BITS_PER_SAMPLE_16BIT
+#endif
+
+#ifndef CODEC_ADC_I2S_PORT
+#define CODEC_ADC_I2S_PORT  (0)
+#endif
+
 static audio_element_handle_t raw_read;
 
 static int _http_stream_event_handle(http_stream_event_msg_t *msg)
@@ -116,6 +136,8 @@ void *setup_player(void *cb, void *ctx)
     i2s_stream_cfg_t i2s_writer = I2S_STREAM_CFG_DEFAULT();
     i2s_writer.type = AUDIO_STREAM_WRITER;
     i2s_writer.i2s_config.sample_rate = 48000;
+    i2s_writer.i2s_config.bits_per_sample = CODEC_ADC_BITS_PER_SAMPLE;
+    i2s_writer.need_expand = (CODEC_ADC_BITS_PER_SAMPLE != I2S_BITS_PER_SAMPLE_16BIT);
     esp_audio_output_stream_add(handle, i2s_stream_init(&i2s_writer));
 
     // Set default volume
@@ -125,89 +147,71 @@ void *setup_player(void *cb, void *ctx)
     return handle;
 }
 
-static esp_err_t recorder_pipeline_open(void **handle)
+static int input_cb_for_afe(int16_t *buffer, int buf_sz, void *user_ctx, TickType_t ticks)
+{
+    return raw_stream_read(raw_read, (char *)buffer, buf_sz);
+}
+
+void *setup_recorder(rec_event_cb_t cb, void *ctx)
 {
     audio_element_handle_t i2s_stream_reader;
-    audio_pipeline_handle_t recorder;
+    audio_pipeline_handle_t pipeline;
     audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
-    recorder = audio_pipeline_init(&pipeline_cfg);
-    if (NULL == recorder) {
-        return ESP_FAIL;
+    pipeline = audio_pipeline_init(&pipeline_cfg);
+    if (NULL == pipeline) {
+        return NULL;
     }
 
-#ifdef CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
-    i2s_cfg.i2s_port = 1;
-    i2s_cfg.i2s_config.use_apll = 0;
-    i2s_cfg.i2s_config.sample_rate = 16000;
-    i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_ONLY_RIGHT;
-    i2s_cfg.type = AUDIO_STREAM_READER;
-    i2s_stream_reader = i2s_stream_init(&i2s_cfg);
-#else
-    i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
-    i2s_cfg.type = AUDIO_STREAM_READER;
-    i2s_stream_reader = i2s_stream_init(&i2s_cfg);
-    audio_element_info_t i2s_info = {0};
-    audio_element_getinfo(i2s_stream_reader, &i2s_info);
-    i2s_info.bits = 16;
-    i2s_info.channels = 2;
-    i2s_info.sample_rates = 48000;
-    audio_element_setinfo(i2s_stream_reader, &i2s_info);
-
-    rsp_filter_cfg_t rsp_cfg = DEFAULT_RESAMPLE_FILTER_CONFIG();
-    rsp_cfg.src_rate = 48000;
-    rsp_cfg.src_ch = 2;
-    rsp_cfg.dest_rate = 16000;
-    rsp_cfg.dest_ch = 1;
-    audio_element_handle_t filter = rsp_filter_init(&rsp_cfg);
+    i2s_cfg.i2s_port = CODEC_ADC_I2S_PORT;
+#ifdef CONFIG_ESP32_S3_KORVO2_V3_BOARD
+    i2s_cfg.i2s_config.bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT;
 #endif
+    i2s_cfg.i2s_config.use_apll = 0;
+    i2s_cfg.i2s_config.sample_rate = CODEC_ADC_SAMPLE_RATE;
+    i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT;
+    i2s_cfg.type = AUDIO_STREAM_READER;
+    i2s_stream_reader = i2s_stream_init(&i2s_cfg);
 
     raw_stream_cfg_t raw_cfg = RAW_STREAM_CFG_DEFAULT();
     raw_cfg.type = AUDIO_STREAM_READER;
     raw_read = raw_stream_init(&raw_cfg);
 
-    audio_pipeline_register(recorder, i2s_stream_reader, "i2s");
-    audio_pipeline_register(recorder, raw_read, "raw");
+    audio_pipeline_register(pipeline, i2s_stream_reader, "i2s");
+    audio_pipeline_register(pipeline, raw_read, "raw");
+    const char *link_tag[3] = {"i2s", "raw"};
+    uint8_t linked_num = 2;
 
-    
-#ifdef CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
-    const char *link_tag[2] = {"i2s", "raw"};
-    audio_pipeline_link(recorder, &link_tag[0], 2);
-#else
-    audio_pipeline_register(recorder, filter, "filter");
-    const char *link_tag[3] = {"i2s", "filter", "raw"};
-    audio_pipeline_link(recorder, &link_tag[0], 3);
+#if (CODEC_ADC_SAMPLE_RATE != (16000))
+    rsp_filter_cfg_t rsp_cfg = DEFAULT_RESAMPLE_FILTER_CONFIG();
+    rsp_cfg.src_rate = CODEC_ADC_SAMPLE_RATE;
+    rsp_cfg.dest_rate = 16000;
+#ifdef CONFIG_ESP32_S3_KORVO2_V3_BOARD
+    rsp_cfg.mode = RESAMPLE_UNCROSS_MODE;
+    rsp_cfg.src_ch = 4;
+    rsp_cfg.dest_ch = 4;
+    rsp_cfg.max_indata_bytes = 1024;
 #endif
-
-    audio_pipeline_run(recorder);
+    audio_element_handle_t filter = rsp_filter_init(&rsp_cfg);
+    audio_pipeline_register(pipeline, filter, "filter");
+    link_tag[1] = "filter";
+    link_tag[2] = "raw";
+    linked_num = 3;
+#endif
+    audio_pipeline_link(pipeline, &link_tag[0], linked_num);
+    audio_pipeline_run(pipeline);
     ESP_LOGI(TAG, "Recorder has been created");
-    *handle = recorder;
-    return ESP_OK;
-}
 
-static esp_err_t recorder_pipeline_read(void *handle, char *data, int data_size)
-{
-    raw_stream_read(raw_read, data, data_size);
-    return ESP_OK;
-}
+    recorder_sr_cfg_t recorder_sr_cfg = DEFAULT_RECORDER_SR_CFG();
+    recorder_sr_cfg.afe_cfg.aec_init = false;
+    recorder_sr_cfg.afe_cfg.memory_alloc_mode = AFE_MEMORY_ALLOC_MORE_PSRAM;
+    recorder_sr_cfg.afe_cfg.agc_mode = AFE_MN_PEAK_NO_AGC;
 
-static esp_err_t recorder_pipeline_close(void *handle)
-{
-    audio_pipeline_deinit(handle);
-    return ESP_OK;
-}
-
-void setup_recorder(rec_callback cb, void *ctx)
-{
-    rec_config_t eng = DEFAULT_REC_ENGINE_CONFIG();
-    eng.vad_off_delay_ms = 800;
-    eng.wakeup_time_ms = 10 * 1000;
-    eng.evt_cb = cb;
-    eng.open = recorder_pipeline_open;
-    eng.close = recorder_pipeline_close;
-    eng.fetch = recorder_pipeline_read;
-    eng.extension = NULL;
-    eng.support_encoding = false;
-    eng.user_data = ctx;
-    rec_engine_create(&eng);
+    audio_rec_cfg_t cfg = AUDIO_RECORDER_DEFAULT_CFG();
+    cfg.read = (recorder_data_read_t)&input_cb_for_afe;
+    cfg.sr_handle = recorder_sr_create(&recorder_sr_cfg, &cfg.sr_iface);
+    cfg.event_cb = cb;
+    cfg.vad_off = 1000;
+    cfg.user_data = ctx;
+    return audio_recorder_create(&cfg);
 }

@@ -5,19 +5,19 @@
 
 ## 例程简介
 
-- ESP VoIP 是一个基于标准 SIP 协议的电话客户端，可以用于点对点通话和音频会议等场景。
+ESP VoIP 是一个基于标准 SIP 协议的电话客户端，可以用于点对点通话和音频会议等场景。
 
 ### 资源列表
 
-- 内存消耗
+内存消耗
 
-esp32-lyrat-mini:
+ESP32-LyraT-Mini：
 
 |memory_total (byte)|memory_inram (byte)|memory_psram (byte)
 |---|---|---
 |392008 |236328 |155680
 
-other boards:
+其他开发板：
 
 |memory_total (byte)|memory_inram (byte)|memory_psram (byte)
 |---|---|---
@@ -32,15 +32,7 @@ other boards:
 
 ### 硬件要求
 
-- 此示例可在标有绿色复选框的开发板上运行。请记住，如下面的*配置*一节所述，可以在 menuconfig 中选择合适的开发板。
-
-| Board Name | Getting Started | Chip | Compatible |
-|-------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------:|:-----------------------------------------------------------------:|
-| ESP32-LyraT | [![alt text](../../../docs/_static/esp32-lyrat-v4.3-side-small.jpg "ESP32-LyraT")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "Compatible") |
-| ESP32-LyraTD-MSC | [![alt text](../../../docs/_static/esp32-lyratd-msc-v2.2-small.jpg "ESP32-LyraTD-MSC")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyratd-msc.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "Compatible") |
-| ESP32-LyraT-Mini | [![alt text](../../../docs/_static/esp32-lyrat-mini-v1.2-small.jpg "ESP32-LyraT-Mini")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "Compatible") |
-| ESP32-Korvo-DU1906 | [![alt text](../../../docs/_static/esp32-korvo-du1906-v1.1-small.jpg "ESP32-Korvo-DU1906")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-korvo-du1906.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/no-button.png "Compatible") |
-| ESP32-S2-Kaluga-1 Kit | [![alt text](../../../docs/_static/esp32-s2-kaluga-1-kit-small.png "ESP32-S2-Kaluga-1 Kit")](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html) | <img src="../../../docs/_static/ESP32-S2.svg" height="100" alt="ESP32-S2"> | ![alt text](../../../docs/_static/no-button.png "Compatible") |
+本例程支持的开发板在 `$ADF_PATH/examples/README_CN.md` 文档中[例程与乐鑫音频开发板的兼容性表格](../../README_CN.md#例程与乐鑫音频开发板的兼容性)中有标注，表格中标有绿色复选框的开发板均可运行本例程。请记住，如下面的 [配置](#配置) 一节所述，可以在 `menuconfig` 中选择开发板。
 
 ### 其他要求
 
@@ -51,21 +43,23 @@ other boards:
   - [Asterisk for Raspberry Pi](http://www.raspberry-asterisk.org/)
 
   - [Freeswitch](https://freeswitch.org/confluence/display/FREESWITCH/Installation)
-      - 建议关闭服务器事件通知 `NOTIFY`，可以通过如下方式配置：
-        ```
-        在 `conf/sip_profiles/internal.xml` 中设置 `<param name="send-message-query-on-register" value="false"/>`
-        ```
-      - 建议在 `conf/vars.xml` 中删除暂不支持的 Video Codec
+      - 建议关闭服务器事件通知 `NOTIFY`，可以通过在 `conf/sip_profiles/internal.xml` 中设置 `<param name="send-message-query-on-register" value="false"/>` 关闭通知。
+
+      - 建议关闭服务器 timer，可以通过在 `conf/sip_profiles/internal.xml` 中设置 `<param name="enable-timer" value="false"/>` 来关闭。
+
+      - 建议在 `conf/vars.xml` 中删除暂不支持的 Video Codec。
 
   - [Kamailio](https://kamailio.org/docs/tutorials/5.3.x/kamailio-install-guide-git/)
 
   - [Yate Server](http://docs.yate.ro/wiki/Beginners_in_Yate)
 
+- 我们建议搭建 Freeswitch 服务器来测试。
+
 ## 编译和下载
 
 ### IDF 默认分支
 
-本例程默认 IDF 为 ADF 的內建分支 `$ADF_PATH/esp-idf`。
+本例程支持 IDF release/v3.3 及以后的分支，例程默认使用 ADF 的內建分支 `$ADF_PATH/esp-idf`。
 
 ### 配置
 
@@ -112,7 +106,8 @@ idf.py -p PORT flash monitor
 - 服务器连接成功后，您可以按下 `Play` 键进行呼叫或者接听，`Mode` 键进行挂断或者取消呼叫。
 - `Vol+` 和 `Vol-` 键可以调节开发板通话音量，在 `esp32-lyrat-mini` 开发板上可以按下 `Rec` 键进行 `MIC` 静音的操作。
 - 您也可以使用 Linphone/MicroSIP 等开源客户端与开发板进行通话。
-- 关于回声消除 (AEC) 的功能，目前软件方案只支持 `esp32-lyrat-mini` 开发板，您也可以选择 `esp32-lyratd-msc` 开发板或者其他带 AEC 功能的硬件来完成。
+- 如果 AEC 效果不是很好，你可以打开 `DEBUG_AEC_INPUT` define，就可以获取到原始的输入数据（左声道是从麦克风获取到的信号，右声道是扬声器端获取到的信号），并使用音频分析工具查看麦克风信号和扬声器信号之间的延迟。
+- AEC 内部缓冲机制要求录制信号相对于相应的参考（回放）信号延迟 0 - 10 ms 左右。
 
 ### 日志输出
 
@@ -325,13 +320,13 @@ I (1373024) VOIP_EXAMPLE: SIP_EVENT_AUDIO_SESSION_END
 ## Troubleshooting
 
 - 如果您使用 `Esptouch` 配网出现 Crash，请将 `SC_ACK_TASK_STACK_SIZE` 适当调大一些。
-- 如果您遇到无法链接服务器的情况，请先使用 Linphone/MicroSIP 开源客户端验证您的服务器是否工作正常。
+- 如果您遇到无法连接服务器的情况，请先使用 Linphone/MicroSIP 开源客户端验证您的服务器是否工作正常。
 - 如果您需要减少 SIP 信令 RTT 响应时间，您可以设置 esp_log_level_set("SIP", ESP_LOG_WARN)。
 
 ## 技术支持
 请按照下面的链接获取技术支持：
 
-- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) forum
+- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) 论坛
 - 故障和新功能需求，请创建 [GitHub issue](https://github.com/espressif/esp-adf/issues)
 
 我们会尽快回复。

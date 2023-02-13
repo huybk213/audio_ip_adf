@@ -30,7 +30,6 @@
 #include "duer_audio_wrapper.h"
 #include "lightduer_voice.h"
 
-#include "recorder_engine.h"
 #include "esp_audio.h"
 #include "esp_log.h"
 
@@ -38,6 +37,9 @@
 #include "audio_mem.h"
 #include "board.h"
 #include "audio_common.h"
+#include "audio_recorder.h"
+#include "audio_pipeline.h"
+#include "recorder_sr.h"
 
 #include "fatfs_stream.h"
 #include "raw_stream.h"
@@ -47,13 +49,34 @@
 #include "mp3_decoder.h"
 #include "aac_decoder.h"
 #include "http_stream.h"
+#include "filter_resample.h"
 
-static SemaphoreHandle_t s_mutex;
-static int duer_playing_type = DUER_AUDIO_TYPE_UNKOWN;
-esp_audio_handle_t player;
+#include "model_path.h"
+
+#ifndef CODEC_ADC_SAMPLE_RATE
+#warning "Please define CODEC_ADC_SAMPLE_RATE first, default value is 48kHz may not correctly"
+#define CODEC_ADC_SAMPLE_RATE    48000
+#endif
+
+#ifndef CODEC_ADC_BITS_PER_SAMPLE
+#warning "Please define CODEC_ADC_BITS_PER_SAMPLE first, default value 16 bits may not correctly"
+#define CODEC_ADC_BITS_PER_SAMPLE  I2S_BITS_PER_SAMPLE_16BIT
+#endif
+
+#ifndef CODEC_ADC_I2S_PORT
+#define CODEC_ADC_I2S_PORT  (0)
+#endif
+
 static const char *TAG = "AUDIO_WRAPPER";
-static int player_pause = 0;
-static int audio_pos = 0;
+
+static SemaphoreHandle_t        s_mutex     = NULL;
+static esp_audio_handle_t       player      = NULL;
+static audio_rec_handle_t       recorder    = NULL;
+static audio_element_handle_t   raw_read    = NULL;
+
+static int player_pause         = 0;
+static int audio_pos            = 0;
+static int duer_playing_type    = DUER_AUDIO_TYPE_UNKOWN;
 
 static void esp_audio_state_task (void *para)
 {
@@ -61,21 +84,19 @@ static void esp_audio_state_task (void *para)
     esp_audio_state_t esp_state = {0};
     while (1) {
         xQueueReceive(que, &esp_state, portMAX_DELAY);
-        ESP_LOGI(TAG, "esp_auido status:%x,err:%x,state:%d", esp_state.status, esp_state.err_msg, duer_playing_type);
+        ESP_LOGI(TAG, "esp_audio status:%x,err:%x,state:%d", esp_state.status, esp_state.err_msg, duer_playing_type);
         if ((esp_state.status == AUDIO_STATUS_STOPPED)
             || (esp_state.status == AUDIO_STATUS_FINISHED)
             || (esp_state.status == AUDIO_STATUS_ERROR)) {
             if (duer_playing_type == DUER_AUDIO_TYPE_SPEECH) {
                 duer_playing_type = DUER_AUDIO_TYPE_UNKOWN;
-                bool wakeup = false;
-                rec_engine_get_wakeup_stat(&wakeup);
+                bool wakeup = audio_recorder_get_wakeup_state(recorder);
                 if (wakeup == false) {
                     duer_dcs_speech_on_finished();
                 }
                 ESP_LOGE(TAG, "duer_dcs_speech_on_finished,%d, wakeup:%d", duer_playing_type, wakeup);
             } else if ((duer_playing_type == DUER_AUDIO_TYPE_MUSIC) && (player_pause == 0)) {
-                bool wakeup = false;
-                rec_engine_get_wakeup_stat(&wakeup);
+                bool wakeup = audio_recorder_get_wakeup_state(recorder);
                 if (wakeup == false) {
                     duer_dcs_audio_on_finished();
                 }
@@ -101,10 +122,10 @@ int _http_stream_event_handle(http_stream_event_msg_t *msg)
     return ESP_OK;
 }
 
-static void setup_player(void)
+void *duer_audio_setup_player(void)
 {
     if (player) {
-        return ;
+        return player;
     }
 
     esp_audio_cfg_t cfg = DEFAULT_ESP_AUDIO_CONFIG();
@@ -134,6 +155,8 @@ static void setup_player(void)
     // Create writers and add to esp_audio
     i2s_stream_cfg_t i2s_writer = I2S_STREAM_CFG_DEFAULT();
     i2s_writer.i2s_config.sample_rate = 48000;
+    i2s_writer.i2s_config.bits_per_sample = CODEC_ADC_BITS_PER_SAMPLE;
+    i2s_writer.need_expand = (CODEC_ADC_BITS_PER_SAMPLE != I2S_BITS_PER_SAMPLE_16BIT);
     i2s_writer.type = AUDIO_STREAM_WRITER;
 
     // Add decoders and encoders to esp_audio
@@ -160,11 +183,83 @@ static void setup_player(void)
     esp_audio_vol_set(player, 60);
     AUDIO_MEM_SHOW(TAG);
     ESP_LOGI(TAG, "esp_audio instance is:%p", player);
+
+    return player;
+}
+
+static int input_cb_for_afe(int16_t *buffer, int buf_sz, void *user_ctx, TickType_t ticks)
+{
+    return raw_stream_read(raw_read, (char *)buffer, buf_sz);
+}
+
+void *duer_audio_start_recorder(rec_event_cb_t cb)
+{
+    if (recorder) {
+        return recorder;
+    }
+
+    audio_element_handle_t i2s_stream_reader;
+    audio_pipeline_handle_t pipeline;
+    audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
+    pipeline = audio_pipeline_init(&pipeline_cfg);
+    if (NULL == pipeline) {
+        return NULL;
+    }
+
+    i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
+    i2s_cfg.i2s_port = CODEC_ADC_I2S_PORT;
+    i2s_cfg.i2s_config.use_apll = 0;
+    i2s_cfg.i2s_config.sample_rate = CODEC_ADC_SAMPLE_RATE;
+    i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT;
+    i2s_cfg.type = AUDIO_STREAM_READER;
+    i2s_stream_reader = i2s_stream_init(&i2s_cfg);
+
+    raw_stream_cfg_t raw_cfg = RAW_STREAM_CFG_DEFAULT();
+    raw_cfg.type = AUDIO_STREAM_READER;
+    raw_read = raw_stream_init(&raw_cfg);
+
+    audio_pipeline_register(pipeline, i2s_stream_reader, "i2s");
+    audio_pipeline_register(pipeline, raw_read, "raw");
+    const char *link_tag[3] = {"i2s", "raw"};
+    uint8_t linked_num = 2;
+
+#if (CODEC_ADC_SAMPLE_RATE != (16000))
+    rsp_filter_cfg_t rsp_cfg = DEFAULT_RESAMPLE_FILTER_CONFIG();
+    rsp_cfg.src_rate = CODEC_ADC_SAMPLE_RATE;
+    rsp_cfg.dest_rate = 16000;
+#ifdef CONFIG_ESP32_S3_KORVO2_V3_BOARD
+    rsp_cfg.mode = RESAMPLE_UNCROSS_MODE;
+    rsp_cfg.src_ch = 4;
+    rsp_cfg.dest_ch = 4;
+    rsp_cfg.max_indata_bytes = 1024;
+#endif
+    audio_element_handle_t filter = rsp_filter_init(&rsp_cfg);
+    audio_pipeline_register(pipeline, filter, "filter");
+    link_tag[1] = "filter";
+    link_tag[2] = "raw";
+    linked_num = 3;
+#endif
+    audio_pipeline_link(pipeline, &link_tag[0], linked_num);
+    audio_pipeline_run(pipeline);
+    ESP_LOGI(TAG, "Recorder has been created");
+
+    recorder_sr_cfg_t recorder_sr_cfg = DEFAULT_RECORDER_SR_CFG();
+    recorder_sr_cfg.afe_cfg.aec_init = false;
+    recorder_sr_cfg.afe_cfg.memory_alloc_mode = AFE_MEMORY_ALLOC_MORE_PSRAM;
+    recorder_sr_cfg.afe_cfg.agc_mode = AFE_MN_PEAK_NO_AGC;
+
+    audio_rec_cfg_t cfg = AUDIO_RECORDER_DEFAULT_CFG();
+    cfg.read = (recorder_data_read_t)&input_cb_for_afe;
+    cfg.sr_handle = recorder_sr_create(&recorder_sr_cfg, &cfg.sr_iface);
+    cfg.event_cb = cb;
+    cfg.vad_off = 1000;
+    recorder = audio_recorder_create(&cfg);
+
+    return recorder;
 }
 
 void duer_audio_wrapper_init(void)
 {
-    setup_player();
     if (s_mutex == NULL) {
         s_mutex = xSemaphoreCreateMutex();
         if (s_mutex == NULL) {
@@ -191,13 +286,13 @@ int duer_audio_wrapper_get_state()
 void duer_dcs_listen_handler(void)
 {
     ESP_LOGI(TAG, "enable_listen_handler, open mic");
-    rec_engine_trigger_start();
+    audio_recorder_trigger_start(recorder);
 }
 
 void duer_dcs_stop_listen_handler(void)
 {
     ESP_LOGI(TAG, "stop_listen, close mic");
-    rec_engine_trigger_stop();
+    audio_recorder_trigger_stop(recorder);
 }
 
 void duer_dcs_volume_set_handler(int volume)

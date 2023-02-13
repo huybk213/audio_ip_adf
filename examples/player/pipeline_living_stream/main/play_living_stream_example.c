@@ -27,11 +27,7 @@
 #include "periph_wifi.h"
 #include "board.h"
 
-#if __has_include("esp_idf_version.h")
-#include "esp_idf_version.h"
-#else
-#define ESP_IDF_VERSION_VAL(major, minor, patch) 1
-#endif
+#include "audio_idf_version.h"
 
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0))
 #include "esp_netif.h"
@@ -93,7 +89,11 @@ void app_main(void)
     http_stream_reader = http_stream_init(&http_cfg);
 
     ESP_LOGI(TAG, "[2.2] Create i2s stream to write data to codec chip");
+#if defined CONFIG_ESP32_C3_LYRA_V2_BOARD
+    i2s_stream_cfg_t i2s_cfg = I2S_STREAM_TX_PDM_CFG_DEFAULT();
+#else
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
+#endif
     i2s_cfg.type = AUDIO_STREAM_WRITER;
     i2s_stream_writer = i2s_stream_init(&i2s_cfg);
 

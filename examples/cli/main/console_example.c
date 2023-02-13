@@ -45,11 +45,7 @@
 #include "sdcard_scan.h"
 #include "audio_sys.h"
 
-#if __has_include("esp_idf_version.h")
-#include "esp_idf_version.h"
-#else
-#define ESP_IDF_VERSION_VAL(major, minor, patch) 1
-#endif
+#include "audio_idf_version.h"
 
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0))
 #include "esp_netif.h"
@@ -284,6 +280,7 @@ static esp_err_t wifi_set(esp_periph_handle_t periph, int argc, char *argv[])
     switch (argc) {
         case 2:
             memcpy(w_config.sta.password, argv[1], sizeof(w_config.sta.password));
+            FALL_THROUGH;
         case 1:
             memcpy(w_config.sta.ssid, argv[0], sizeof(w_config.sta.ssid));
             esp_wifi_disconnect();
@@ -479,7 +476,7 @@ const periph_console_cmd_t cli_cmd[] = {
     { .cmd = "getspeed",    .id = 11, .help = "Get speed",                .func = cli_get_speed },
 
     /* ======================== Wi-Fi ======================== */
-    { .cmd = "join",        .id = 20, .help = "Join WiFi AP as a station",      .func = wifi_set },
+    { .cmd = "join",        .id = 20, .help = "Join Wi-Fi AP as a station",     .func = wifi_set },
     { .cmd = "wifi",        .id = 21, .help = "Get connected AP information",   .func = wifi_info },
 
     /* ======================== Led bar ======================== */
@@ -554,11 +551,12 @@ static void cli_setup_console()
     esp_periph_start(set, console_handle);
 }
 
+// Example of initializing esp_audio as an audio player -- START
 static void cli_setup_player(void)
 {
     if (player ) {
         return ;
-    }
+    } 
     esp_audio_cfg_t cfg = DEFAULT_ESP_AUDIO_CONFIG();
     audio_board_handle_t board_handle = audio_board_init();
     cfg.vol_handle = board_handle->audio_hal;
@@ -656,6 +654,7 @@ static void cli_setup_player(void)
     AUDIO_MEM_SHOW(TAG);
     ESP_LOGI(TAG, "esp_audio instance is:%p\r\n", player);
 }
+// Example of initializing esp_audio as an audio player -- END
 
 void app_main(void)
 {

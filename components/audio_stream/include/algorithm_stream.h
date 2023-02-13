@@ -31,13 +31,15 @@
 extern "C" {
 #endif
 
-#define ALGORITHM_STREAM_PINNED_TO_CORE   0
-#define ALGORITHM_STREAM_TASK_PERIOD      5
-#define ALGORITHM_STREAM_TASK_STACK_SIZE (5 * 1024)
+#define ALGORITHM_STREAM_PINNED_TO_CORE     0
+#define ALGORITHM_STREAM_TASK_PERIOD        21
+#define ALGORITHM_STREAM_RINGBUFFER_SIZE    1024
+#define ALGORITHM_STREAM_TASK_STACK_SIZE    (5 * 1024)
 
-#define ALGORITHM_STREAM_DEFAULT_SAMPLE_RATE_HZ   16000 //Hz
+#define ALGORITHM_STREAM_DEFAULT_SAMPLE_RATE_HZ   8000
 #define ALGORITHM_STREAM_DEFAULT_SAMPLE_BIT       16
-#define ALGORITHM_STREAM_DEFAULT_CHANNEL          1
+#define ALGORITHM_STREAM_DEFAULT_MIC_CHANNELS     1
+#define ALGORITHM_STREAM_DEFAULT_AGC_GAIN_DB      5
 
 /*
 
@@ -62,7 +64,7 @@ extern "C" {
                     |                   record signal                                                           |
                     |                                                                                           |
                     +-------------------------------------------------------------------------------------------+
-                
+
                                                            +-----------+
                                                            |           |
                                                            |  TYPE 2   |
@@ -101,7 +103,8 @@ typedef enum {
 typedef enum {
     ALGORITHM_STREAM_USE_AEC = (0x1 << 0), /*!< Use AEC */
     ALGORITHM_STREAM_USE_AGC = (0x1 << 1), /*!< Use AGC */
-    ALGORITHM_STREAM_USE_NS  = (0x1 << 2)  /*!< Use NS  */
+    ALGORITHM_STREAM_USE_NS  = (0x1 << 2), /*!< Use NS  */
+    ALGORITHM_STREAM_USE_VAD = (0x1 << 3)  /*!< Use VAD  */
 } algorithm_stream_mask_t;
 
 /**
@@ -112,27 +115,35 @@ typedef struct {
     int task_stack;                             /*!< Task stack size */
     int task_prio;                              /*!< Task peroid */
     int task_core;                              /*!< The core that task to be created */
-    int rec_ch;                                 /*!< Channel number of record signal */
-    int ref_ch;                                 /*!< Channel number of reference signal */
-    int ref_sample_rate;                        /*!< Sample rate of reference signal */
-    int rec_sample_rate;                        /*!< Sample rate of record signal */
+    int out_rb_size;                            /*!< Size of output ringbuffer */
+    bool stack_in_ext;                          /*!< Try to allocate stack in external memory */
     int rec_linear_factor;                      /*!< The linear amplication factor of record signal*/
     int ref_linear_factor;                      /*!< The linear amplication factor of reference signal */
+    bool debug_input;                           /*!< debug algorithm input data */
+    bool swap_ch;                               /*!< Swap left and right channels */
     int8_t algo_mask;                           /*!< Choose algorithm to use */
+    int sample_rate;                            /*!< The sampling rate of the input PCM (in Hz) */
+    int mic_ch;                                 /*!< MIC channel num */
+    int agc_gain;                               /*!< AGC gain(dB) for voice communication */
 } algorithm_stream_cfg_t;
+
+#define ALGORITHM_STREAM_DEFAULT_MASK    (ALGORITHM_STREAM_USE_AEC | ALGORITHM_STREAM_USE_AGC | ALGORITHM_STREAM_USE_NS)
 
 #define ALGORITHM_STREAM_CFG_DEFAULT() {                                                          \
     .input_type = ALGORITHM_STREAM_INPUT_TYPE1,                                                   \
     .task_stack = ALGORITHM_STREAM_TASK_STACK_SIZE,                                               \
     .task_prio  = ALGORITHM_STREAM_TASK_PERIOD,                                                   \
     .task_core  = ALGORITHM_STREAM_PINNED_TO_CORE,                                                \
-    .rec_ch     = 1,                                                                              \
-    .ref_ch     = 1,                                                                              \
-    .ref_sample_rate   = 16000,                                                                   \
-    .rec_sample_rate   = 16000,                                                                   \
+    .out_rb_size = ALGORITHM_STREAM_RINGBUFFER_SIZE,                                              \
+    .stack_in_ext = true,                                                                         \
     .rec_linear_factor = 1,                                                                       \
-    .ref_linear_factor = 3,                                                                       \
-    .algo_mask = (ALGORITHM_STREAM_USE_AEC | ALGORITHM_STREAM_USE_AGC | ALGORITHM_STREAM_USE_NS), \
+    .ref_linear_factor = 1,                                                                       \
+    .debug_input = false,                                                                         \
+    .swap_ch = false,                                                                             \
+    .algo_mask = ALGORITHM_STREAM_DEFAULT_MASK,                                                   \
+    .sample_rate = ALGORITHM_STREAM_DEFAULT_SAMPLE_RATE_HZ,                                       \
+    .mic_ch = ALGORITHM_STREAM_DEFAULT_MIC_CHANNELS,                                              \
+    .agc_gain = ALGORITHM_STREAM_DEFAULT_AGC_GAIN_DB,                                             \
 }
 
 /**
@@ -145,42 +156,37 @@ typedef struct {
 audio_element_handle_t algo_stream_init(algorithm_stream_cfg_t *config);
 
 /**
- * @brief      Get reference signal input ringbuff
+ * @brief      Set playback signal or recording signal delay when use type2
  *
- * @note       If input type2 is choosen, call this function to get ringbuffer to input reference data.
+ * @note       The AEC internal buffering mechanism requires that the recording signal
+ *             is delayed by around 0 - 10 ms compared to the corresponding reference (playback) signal.
  *
- * @param      algo_handle   Handle of algorithm stream
- *
- * @return     Ringbuffer handle to get
- *         
- */
-ringbuf_handle_t algo_stream_get_multi_input_rb(audio_element_handle_t algo_handle);
-
-/**
- * @brief      Setup record signal clock for algorithm stream, this function is only used with handle created by `algo_stream_init`
- *
- * @param[in]  algo_handle        The algorithm stream element handle
- * @param[in]  rec_ch             Channel number of record signal
- * @param[in]  rec_sample_rate    Sample rate of record signal
+ * @param      el           Handle of element
+ * @param      ringbuf      Handle of ringbuf
+ * @param      delay_ms     The delay between playback and recording in ms
+ *                          This delay_ms can be debugged by yourself, you can set the configuration debug_input to true,
+ *                          then get the original input data (left channel is the signal captured from the microphone,
+ *                                                            right channel is the signal played to the speaker),
+ *                          and check the delay with an audio analysis tool.
  *
  * @return
  *     - ESP_OK
  *     - ESP_FAIL
+ *     - ESP_ERR_INVALID_ARG
  */
-esp_err_t algo_stream_set_record_rate(audio_element_handle_t algo_handle, int rec_ch, int rec_sample_rate);
+audio_element_err_t algo_stream_set_delay(audio_element_handle_t el, ringbuf_handle_t ringbuf, int delay_ms);
 
 /**
- * @brief      Setup reference signal clock for algorithm stream, this function is only used with handle created by `algo_stream_init`
+ * @brief      Fix I2S mono noise issue
  *
- * @param[in]  algo_handle        The algorithm stream element handle
- * @param[in]  ref_ch             Channel number of reference signal
- * @param[in]  ref_sample_rate    Sample rate of reference signal
+ * @note       This API only for ESP32 with I2S 16bits
  *
- * @return
- *     - ESP_OK
- *     - ESP_FAIL
+ * @param      sbuff    I2S data buffer
+ * @param      len      I2S data len
+ *
+ * @return     ESP_OK
  */
-esp_err_t algo_stream_set_reference_rate(audio_element_handle_t algo_handle, int ref_ch, int ref_sample_rate);
+esp_err_t algorithm_mono_fix(uint8_t *sbuff, uint32_t len);
 
 #ifdef __cplusplus
 }

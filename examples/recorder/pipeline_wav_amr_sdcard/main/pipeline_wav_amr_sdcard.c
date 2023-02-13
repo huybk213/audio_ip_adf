@@ -117,7 +117,7 @@ void app_main()
 #endif
     audio_pipeline_register(pipeline_amr, amr_fatfs_stream_writer, "amr_file");
 
-    ESP_LOGI(TAG, "[4.5] Link it together [codec_chip]-->i2s_stream-->wav_encoder-->fatfs_stream-->[sdcard]");
+    ESP_LOGI(TAG, "[4.5] Link it together raw_stream-->amr_encoder-->fatfs_stream-->[sdcard]");
 #ifdef CONFIG_CHOICE_AMR_WB
     const char *link_amr[3] = {"amr_raw", "Wamr", "amr_file"};
     audio_pipeline_link(pipeline_amr, &link_amr[0], 3);
@@ -141,9 +141,12 @@ void app_main()
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
     audio_event_iface_handle_t evt = audio_event_iface_init(&evt_cfg);
 
+    audio_pipeline_set_listener(pipeline_wav, evt);
+    audio_pipeline_set_listener(pipeline_amr, evt);
+
     ESP_LOGI(TAG, "[5.1] Listening event from peripherals");
     audio_event_iface_set_listener(esp_periph_set_get_event_iface(set), evt);
-
+    
     ESP_LOGI(TAG, "[6.0] start audio_pipeline");
     audio_pipeline_run(pipeline_wav);
     audio_pipeline_run(pipeline_amr);
@@ -157,7 +160,7 @@ void app_main()
             ESP_LOGI(TAG, "[ * ] Recording ... %d", second_recorded);
             if (second_recorded >= RECORD_TIME_SECONDS) {
                 ESP_LOGI(TAG, "Finishing recording");
-                break;
+                audio_element_set_ringbuf_done(i2s_stream_reader);
             }
             continue;
         }

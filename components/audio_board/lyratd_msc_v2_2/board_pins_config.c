@@ -29,7 +29,7 @@
 #include "audio_error.h"
 #include "audio_mem.h"
 
-static const char *TAG = "LYRAT_V4_2";
+static const char *TAG = "LYRATD_MSC_V2_2";
 
 esp_err_t get_i2c_pins(i2c_port_t port, i2c_config_t *i2c_config)
 {
@@ -152,4 +152,10 @@ int8_t get_reset_codec_gpio(void)
 int8_t get_reset_board_gpio(void)
 {
     return DSP_RESET_GPIO;
+}
+
+// led pins
+int8_t get_green_led_gpio(void)
+{
+    return GREEN_LED_GPIO;
 }

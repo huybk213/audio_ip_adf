@@ -1,54 +1,37 @@
 # Multi-Room Music example
 
-- [Chinese Version](./README_CN.md)
-- Difficulty level: ![alt text](../../../docs/_static/level_regular.png "Regular Example")
+- [中文版本](./README_CN.md)
+- Regular Example: ![alt text](../../../docs/_static/level_regular.png "Regular Example")
 
 ## Example Brief
 
-- ESP Multi-Room Music is a Wi-Fi-based communication protocol to share music among multiple interconnected speakers.
-- Under this protocol, those connected speakers form a Group. They can play music synchronously and are controlled together, which can easily achieve a theater-grade stereo surround sound system.
+ESP Multi-Room Music is a Wi-Fi-based communication protocol to share music among multiple interconnected speakers. Under this protocol, those connected speakers form a Group. They can play music synchronously and are controlled together, which can easily achieve a theater-grade stereo surround sound system.
 
 ### Resources
 
-- Memory consumption:
+Memory consumption:
 
-|memory_total (byte)|memory_inram (byte)|memory_psram (byte)
-|---|---|---
-|279632 |145064 |134568
+| memory_total (byte) | memory_inram (byte) | memory_psram (byte) |
+|---------------------|---------------------|---------------------|
+| 279632              | 145064              | 134568              |
 
 ## Environment Setup
 
 ### Hardware Required
 
-This example runs on the boards that are marked with a green checkbox in the table below. Please remember to select the board in menuconfig as discussed in Section *Configuration* below.
-
-| Board Name | Getting Started | Chip | Compatible |
-|-------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------:|:-----------------------------------------------------------------:|
-| ESP32-LyraT | [![alt text](../../../docs/_static/esp32-lyrat-v4.3-side-small.jpg "ESP32-LyraT")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "Compatible") |
-| ESP32-LyraTD-MSC | [![alt text](../../../docs/_static/esp32-lyratd-msc-v2.2-small.jpg "ESP32-LyraTD-MSC")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyratd-msc.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "Compatible") |
-| ESP32-LyraT-Mini | [![alt text](../../../docs/_static/esp32-lyrat-mini-v1.2-small.jpg "ESP32-LyraT-Mini")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "Compatible") |
-| ESP32-Korvo-DU1906 | [![alt text](../../../docs/_static/esp32-korvo-du1906-v1.1-small.jpg "ESP32-Korvo-DU1906")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-korvo-du1906.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/no-button.png "Compatible") |
-| ESP32-S2-Kaluga-1 Kit | [![alt text](../../../docs/_static/esp32-s2-kaluga-1-kit-small.png "ESP32-S2-Kaluga-1 Kit")](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html) | <img src="../../../docs/_static/ESP32-S2.svg" height="100" alt="ESP32-S2"> | ![alt text](../../../docs/_static/no-button.png "Compatible") |
+This example runs on the boards that are marked with a green checkbox in the [table](../../README.md#compatibility-of-examples-with-espressif-audio-boards). Please remember to select the board in menuconfig as discussed in Section [Configuration](#configuration) below.
 
 ## Example Set Up
 
-### Use special IDF branches
+### Use Special IDF Branch
 
-- Compile this example on the IDF branch `release/v4.2`:
+- This example needs to select a branch above IDF `release/v4.2` to compile:
 ```c
 cd $IDF_PATH
 git checkout master
 git pull
 git checkout release/v4.2
 git submodule update --init --recursive
-```
-
-### ADF Patches
-
-- Apply an ADF patch:
-```c
-cd $ADF_PATH
-git apply $ADF_PATH/examples/advanced_examples/multi-room/adf_patch/i2s-stream.patch
 ```
 
 ### Configuration
@@ -68,16 +51,16 @@ idf.py -p PORT flash monitor
 
 To exit the serial monitor, type ``Ctrl-]``.
 
-See the Getting Started Guide for full steps to configure and use  [ESP-IDF Programming Guide](https://docs.espressif.com/projects/esp-idf/en/release-v4.2/esp32/index.html) to build projects.
+See [ESP-IDF Programming Guide](https://docs.espressif.com/projects/esp-idf/en/release-v4.2/esp32/index.html) for full steps to configure and build an ESP-IDF project.
 
-## How to use the Example
+## How to Use the Example
 
 ### Example Functionality
 
 - Prepare some audio boards, load and run the example on all of them.
 - After all the boards are in `Slave start searching` mode, press the `PLAY/REC` button on one of the boards to start Multi-Room Music playback.
 
-### Example Logs
+### Example Log
 
 - Slave start searching
 ```c
@@ -135,7 +118,7 @@ I (58334) ESP_DECODER: Detect audio type is MP3
 I (58338) MP3_DECODER: MP3 opened
 I (58342) ADF_BIT_STREAM: The element is 0x3f807254. The reserve data 2 is 0x0.
 I (58353) ESP_AUDIO_TASK: Recv Element[DEC_auto-0x3f807254] MSG,type:20000,cmd:8,len:4,status:AEL_STATUS_STATE_RUNNING
-I (58367) ESP_AUDIO_TASK: Received muisc info then on play
+I (58367) ESP_AUDIO_TASK: Received music info then on play
 I (58368) ESP_AUDIO_TASK: On event play, status:UNKNOWN, 0
 I (58374) AUDIO_THREAD: The Resample task allocate stack on external memory
 I (58382) AUDIO_ELEMENT: [Resample-0x3f8075b8] Element task created
@@ -184,7 +167,7 @@ I (60573) ESP_DECODER: Detect audio type is MP3
 I (60577) MP3_DECODER: MP3 opened
 I (60581) ADF_BIT_STREAM: The element is 0x3f806250. The reserve data 2 is 0x0.
 I (60592) ESP_AUDIO_TASK: Recv Element[DEC_auto-0x3f806250] MSG,type:20000,cmd:8,len:4,status:AEL_STATUS_STATE_RUNNING
-I (60607) ESP_AUDIO_TASK: Received muisc info then on play
+I (60607) ESP_AUDIO_TASK: Received music info then on play
 I (60608) ESP_AUDIO_TASK: On event play, status:UNKNOWN, 0
 W (60613) AUIDO_MEM: Can't support stack on external memory due to ESP32 chip is 1
 I (60621) AUDIO_ELEMENT: [Resample-0x3f8065b4] Element task created
@@ -204,7 +187,7 @@ I (61964) MRM_EXAMPLE: slave got sync 1011
 I (61965) MRM_CLIENT: [sync] Sync 1011 PTS 1024 E2E_delay [73] sync diff [-3] ms
 ```
 
-## Technical support and feedback
+## Technical Support and Feedback
 
 Please use the following feedback channels:
 

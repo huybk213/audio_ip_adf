@@ -97,6 +97,9 @@ void app_main(void)
     ESP_LOGI(TAG, "[3.2] Create i2s stream to read audio data from codec chip");
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
     i2s_cfg.type = AUDIO_STREAM_WRITER;
+#if (defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD)
+    i2s_cfg.i2s_port = 1;
+#endif
     audio_element_handle_t i2s_writer = i2s_stream_init(&i2s_cfg);
 
     ESP_LOGI(TAG, "[3.3] Link elements together downmixer-->i2s_writer");
@@ -122,16 +125,16 @@ void app_main(void)
 
     ESP_LOGI(TAG, "[4.1] Create resample element");
     rsp_filter_cfg_t rsp_sdcard_cfg = DEFAULT_RESAMPLE_FILTER_CONFIG();
-    rsp_sdcard_cfg.src_rate = 44100,
-    rsp_sdcard_cfg.src_ch = 2,
-    rsp_sdcard_cfg.dest_rate = 48000,
-    rsp_sdcard_cfg.dest_ch = 1,
+    rsp_sdcard_cfg.src_rate = 44100;
+    rsp_sdcard_cfg.src_ch = 2;
+    rsp_sdcard_cfg.dest_rate = 48000;
+    rsp_sdcard_cfg.dest_ch = 1;
     base_rsp_filter_el = rsp_filter_init(&rsp_sdcard_cfg);
 
-    rsp_sdcard_cfg.src_rate = 16000,
-    rsp_sdcard_cfg.src_ch = 1,
-    rsp_sdcard_cfg.dest_rate = 48000,
-    rsp_sdcard_cfg.dest_ch = 1,
+    rsp_sdcard_cfg.src_rate = 16000;
+    rsp_sdcard_cfg.src_ch = 1;
+    rsp_sdcard_cfg.dest_rate = 48000;
+    rsp_sdcard_cfg.dest_ch = 1;
     newcome_rsp_filter_el = rsp_filter_init(&rsp_sdcard_cfg);
 
     ESP_LOGI(TAG, "[4.2] Create raw stream of base mp3 to write data");

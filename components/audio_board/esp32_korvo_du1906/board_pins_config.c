@@ -134,6 +134,18 @@ int8_t get_sdcard_open_file_num_max(void)
     return SDCARD_OPEN_FILE_NUM_MAX;
 }
 
+// Using "mute" button instead of  "play" button as the audio control button,
+// since `ESP32-Korvo-DU1906` board has not "play" button
+int8_t get_input_play_id(void)
+{
+    return BUTTON_MUTE_ID;
+}
+
+int8_t get_input_set_id(void)
+{
+    return BUTTON_SET_ID;
+}
+
 int8_t get_input_volup_id(void)
 {
     return BUTTON_VOLUP_ID;
@@ -144,6 +156,16 @@ int8_t get_input_voldown_id(void)
     return BUTTON_VOLDOWN_ID;
 }
 
+int8_t get_input_rec_id(void)
+{
+    return BUTTON_REC_ID;
+}
+
+int8_t get_input_mode_id(void)
+{
+    return BUTTON_MODE_ID;
+}
+
 int8_t get_pa_enable_gpio(void)
 {
     return PA_ENABLE_GPIO;
@@ -152,4 +174,10 @@ int8_t get_pa_enable_gpio(void)
 int8_t get_es7243_mclk_gpio(void)
 {
     return ES7243_MCLK_GPIO;
+}
+
+// led pins
+int8_t get_green_led_gpio(void)
+{
+    return GREEN_LED_GPIO;
 }

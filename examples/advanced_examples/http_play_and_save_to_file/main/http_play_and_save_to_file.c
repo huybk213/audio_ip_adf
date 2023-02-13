@@ -29,11 +29,7 @@
 #include "periph_sdcard.h"
 #include "board.h"
 
-#if __has_include("esp_idf_version.h")
-#include "esp_idf_version.h"
-#else
-#define ESP_IDF_VERSION_VAL(major, minor, patch) 1
-#endif
+#include "audio_idf_version.h"
 
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0))
 #include "esp_netif.h"
@@ -81,6 +77,9 @@ void app_main(void)
     ESP_LOGI(TAG, "[2.2] Create i2s stream to write data to codec chip");
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
     i2s_cfg.type = AUDIO_STREAM_WRITER;
+#if (defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD)
+    i2s_cfg.i2s_port = 1;
+#endif
     i2s_stream_writer = i2s_stream_init(&i2s_cfg);
 
     ESP_LOGI(TAG, "[2.3] Create mp3 decoder to decode mp3 file");

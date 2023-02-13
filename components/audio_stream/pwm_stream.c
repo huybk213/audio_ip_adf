@@ -36,6 +36,7 @@
 #include "soc/ledc_struct.h"
 #include "soc/ledc_reg.h"
 #include "pwm_stream.h"
+#include "audio_idf_version.h"
 
 static const char *TAG = "PWM_STREAM";
 
@@ -116,10 +117,10 @@ static pwm_data_handle_t pwm_data_list_create(int size)
         return NULL;
     }
 
-    pwm_data_handle_t data = audio_calloc(1, sizeof(data_list_t));
+    pwm_data_handle_t data = heap_caps_calloc(1, sizeof(data_list_t), MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
     AUDIO_NULL_CHECK(TAG, data, goto data_error);
 
-    data->buf = audio_calloc(1, size);
+    data->buf = heap_caps_calloc(1, size, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
     AUDIO_NULL_CHECK(TAG, data->buf, goto data_error);
 
     data->semaphore = xSemaphoreCreateBinary();
@@ -215,6 +216,8 @@ static inline void ledc_set_left_duty_fast(uint32_t duty_val)
 static inline void ledc_set_right_duty_fast(uint32_t duty_val)
 {
     *g_ledc_right_duty_val = (duty_val) << 4;
+    *g_ledc_right_conf0_val |= 0x00000014;
+    *g_ledc_right_conf1_val |= 0x80000000;
 }
 
 static void IRAM_ATTR timer_group_isr(void *para)
@@ -226,16 +229,28 @@ static void IRAM_ATTR timer_group_isr(void *para)
     }
 
 #ifdef CONFIG_IDF_TARGET_ESP32S2
+#if ((ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0)) && (ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 4, 0)))
     if (handle->timg_dev->int_st.val & BIT(handle->config.timer_num)) {
         handle->timg_dev->int_clr.val |= (1UL << handle->config.timer_num);
     }
+    handle->timg_dev->hw_timer[handle->config.timer_num].config.alarm_en = TIMER_ALARM_EN;
+#else
+    if (handle->timg_dev->int_st_timers.val & BIT(handle->config.timer_num)) {
+        handle->timg_dev->int_clr_timers.val |= (1UL << handle->config.timer_num);
+    }
+    handle->timg_dev->hw_timer[handle->config.timer_num].config.tx_alarm_en = TIMER_ALARM_EN;
+#endif
 #elif CONFIG_IDF_TARGET_ESP32
     if (handle->timg_dev->int_st_timers.val & BIT(handle->config.timer_num)) {
         handle->timg_dev->int_clr_timers.val |= (1UL << handle->config.timer_num);
     }
-#endif
-
     handle->timg_dev->hw_timer[handle->config.timer_num].config.alarm_en = TIMER_ALARM_EN;
+#elif CONFIG_IDF_TARGET_ESP32S3
+    if (handle->timg_dev->int_st_timers.val & BIT(handle->config.timer_num)) {
+        handle->timg_dev->int_clr_timers.val |= (1UL << handle->config.timer_num);
+    }
+    handle->timg_dev->hw_timer[handle->config.timer_num].config.tn_alarm_en = TIMER_ALARM_EN;
+#endif
 
     static uint8_t wave_h, wave_l;
     static uint16_t value;
@@ -312,7 +327,7 @@ static esp_err_t audio_pwm_init(const audio_pwm_config_t *cfg)
     }
 
     audio_pwm_handle_t handle = NULL;
-    handle = audio_calloc(1, sizeof(audio_pwm_t));
+    handle = heap_caps_calloc(1, sizeof(audio_pwm_t), MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
     AUDIO_NULL_CHECK(TAG, handle, goto init_error);
 
     handle->data = pwm_data_list_create(cfg->data_len);
@@ -434,7 +449,19 @@ esp_err_t audio_pwm_set_sample_rate(int rate)
 
     audio_pwm_handle_t handle = g_audio_pwm_handle;
     handle->framerate = rate;
-    uint16_t div = (uint16_t)handle->timg_dev->hw_timer[handle->config.timer_num].config.divider;
+    uint16_t div = 1;
+#ifdef CONFIG_IDF_TARGET_ESP32S2
+#if ((ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0)) && (ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 4, 0)))
+    div = (uint16_t)handle->timg_dev->hw_timer[handle->config.timer_num].config.divider;
+#else
+    div = (uint16_t)handle->timg_dev->hw_timer[handle->config.timer_num].config.tx_divider;
+#endif
+#elif CONFIG_IDF_TARGET_ESP32
+    div = (uint16_t)handle->timg_dev->hw_timer[handle->config.timer_num].config.divider;
+#elif CONFIG_IDF_TARGET_ESP32S3
+    div = (uint16_t)handle->timg_dev->hw_timer[handle->config.timer_num].config.tn_divider;
+#endif
+
     res = timer_set_alarm_value(handle->config.tg_num, handle->config.timer_num, (TIMER_BASE_CLK / div) / handle->framerate);
     return res;
 }

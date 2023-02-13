@@ -34,11 +34,7 @@
 #include "input_key_service.h"
 #include "ble_gatts_module.h"
 
-#if __has_include("esp_idf_version.h")
-#include "esp_idf_version.h"
-#else
-#define ESP_IDF_VERSION_VAL(major, minor, patch) 1
-#endif
+#include "audio_idf_version.h"
 
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0))
 #include "esp_netif.h"
@@ -199,6 +195,10 @@ static esp_err_t wifi_service_cb(periph_service_handle_t handle, periph_service_
     if (evt->type == WIFI_SERV_EVENT_CONNECTED) {
         ESP_LOGI(TAG, "WIFI_CONNECTED");
         g_wifi_connect_state = true;
+        esp_err_t set_dev_name_ret = esp_bt_dev_set_device_name(SAMPLE_DEVICE_NAME);
+        if (set_dev_name_ret) {
+            ESP_LOGE(TAG, "Set BT device name failed, error code = %x, line(%d)", set_dev_name_ret, __LINE__);
+        }
     } else if (evt->type == WIFI_SERV_EVENT_DISCONNECTED) {
         ESP_LOGI(TAG, "WIFI_DISCONNECTED");
         g_wifi_connect_state = false;
@@ -318,7 +318,7 @@ static void a2dp_sink_blufi_start(coex_handle_t *handle)
 
     esp_err_t set_dev_name_ret = esp_bt_dev_set_device_name(SAMPLE_DEVICE_NAME);
     if (set_dev_name_ret) {
-        ESP_LOGE(TAG, "set device name failed, error code = %x", set_dev_name_ret);
+        ESP_LOGE(TAG, "Set BT device name failed, error code = %x, line(%d)", set_dev_name_ret, __LINE__);
     }
     ESP_LOGI(TAG, "[4.3] Create Bluetooth peripheral");
     handle->bt_periph = bt_create_periph();

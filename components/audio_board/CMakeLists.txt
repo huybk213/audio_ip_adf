@@ -88,6 +88,14 @@ set(COMPONENT_SRCS
 )
 endif()
 
+if (CONFIG_ESP32_S3_KORVO2_V3_BOARD)
+message(STATUS "Current board name is " CONFIG_ESP32_S3_KORVO2_V3_BOARD)
+list(APPEND COMPONENT_ADD_INCLUDEDIRS ./esp32_s3_korvo2_v3)
+set(COMPONENT_SRCS
+./esp32_s3_korvo2_v3/board.c
+./esp32_s3_korvo2_v3/board_pins_config.c
+)
+endif()
 
 if (CONFIG_ESP_LYRAT_V4_3_BOARD_BYT_AUDIO_IP)
 message(STATUS "Current board name is " CONFIG_ESP_LYRAT_V4_3_BOARD_BYT_AUDIO_IP)
@@ -95,6 +103,34 @@ list(APPEND COMPONENT_ADD_INCLUDEDIRS ./lyrat_v4_3_byt_audio_ip)
 set(COMPONENT_SRCS
 ./lyrat_v4_3_byt_audio_ip/board.c
 ./lyrat_v4_3_byt_audio_ip/board_pins_config.c
+)
+endif()
+
+if (CONFIG_ESP32_S3_BOX_LITE_BOARD)
+message(STATUS "Current board name is " CONFIG_ESP32_S3_BOX_LITE_BOARD)
+list(APPEND COMPONENT_ADD_INCLUDEDIRS ./esp32_s3_box_lite)
+set(COMPONENT_SRCS
+./esp32_s3_box_lite/board.c
+./esp32_s3_box_lite/board_pins_config.c
+)
+endif()
+
+if (CONFIG_ESP32_S3_BOX_BOARD)
+message(STATUS "Current board name is " CONFIG_ESP32_S3_BOX_BOARD)
+list(APPEND COMPONENT_ADD_INCLUDEDIRS ./esp32_s3_box)
+set(COMPONENT_SRCS
+./esp32_s3_box/board.c
+./esp32_s3_box/board_pins_config.c
+)
+endif()
+
+if (CONFIG_ESP32_C3_LYRA_V2_BOARD)
+message(STATUS "Current board name is " CONFIG_ESP32_C3_LYRA_V2_BOARD)
+list(APPEND COMPONENT_ADD_INCLUDEDIRS ./esp32_c3_lyra)
+set(COMPONENT_SRCS
+./esp32_c3_lyra/board.c
+./esp32_c3_lyra/board_pins_config.c
+./esp32_c3_lyra/C3_lyra_sys_pattern.c
 )
 endif()
 

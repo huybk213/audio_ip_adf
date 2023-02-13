@@ -27,21 +27,45 @@
 
 #include "driver/touch_pad.h"
 
-#define BUTTON_VOLUP_ID           0
-#define BUTTON_VOLDOWN_ID         1
-#define BUTTON_SET_ID             2
-#define BUTTON_PLAY_ID            3
-#define BUTTON_MODE_ID            4
-#define BUTTON_REC_ID             5
+/**
+ * @brief LED Function Definition
+ */
+#define FUNC_SYS_LEN_EN             (1)
+#define WS2812_LED_GPIO             45
 
-#define PA_ENABLE_GPIO            10
-#define BUTTON_ADC                6
-#define WS2812_LED_GPIO           45
 
-#define ES8311_MCLK_SOURCE        1   /* 0 From MCLK, 1 From BCLK */
+/**
+ * @brief LCD SCREEN Function Definition
+ */
+#define FUNC_LCD_SCREEN_EN          (1)
+#define LCD_CTRL_GPIO               GPIO_NUM_6
+#define LCD_RST_GPIO                GPIO_NUM_16
+#define LCD_CS_GPIO                 GPIO_NUM_11
+// LCD SPI Pins
+#define LCD_DC_GPIO                 GPIO_NUM_13
+#define LCD_CLK_GPIO                GPIO_NUM_15
+#define LCD_MOSI_GPIO               GPIO_NUM_9
+// The LCD pixel number in horizontal and vertical
+#define LCD_H_RES                   320
+#define LCD_V_RES                   240
+#define LCD_SWAP_XY                 (true)
+#define LCD_MIRROR_X                (true)
+#define LCD_MIRROR_Y                (true)
+#define LCD_COLOR_INV               (false)
+
+
+/**
+ * @brief Audio Codec Chip Function Definition
+ */
+#define FUNC_AUDIO_CODEC_EN         (1)
+#define PA_ENABLE_GPIO              10
+#define ES8311_MCLK_SOURCE          1   /* 0 From MCLK, 1 From BCLK */
+#define CODEC_ADC_I2S_PORT         (0)
+#define CODEC_ADC_BITS_PER_SAMPLE  I2S_BITS_PER_SAMPLE_16BIT
+#define CODEC_ADC_SAMPLE_RATE      (48000)
+#define RECORD_HARDWARE_AEC        (false)
 
 extern audio_hal_func_t AUDIO_CODEC_ES8311_DEFAULT_HANDLE;
-
 #define AUDIO_CODEC_DEFAULT_CONFIG(){                   \
         .adc_input  = AUDIO_HAL_ADC_INPUT_LINE1,        \
         .dac_output = AUDIO_HAL_DAC_OUTPUT_ALL,         \
@@ -54,36 +78,48 @@ extern audio_hal_func_t AUDIO_CODEC_ES8311_DEFAULT_HANDLE;
         },                                              \
 };
 
-#define INPUT_KEY_NUM     6
 
+/**
+ * @brief Button Function Definition
+ */
+#define FUNC_BUTTON_EN              (1)
+#define BUTTON_ADC                  6
+#define INPUT_KEY_NUM               6
+#define BUTTON_VOLUP_ID             0
+#define BUTTON_VOLDOWN_ID           1
+#define BUTTON_SET_ID               2
+#define BUTTON_PLAY_ID              3
+#define BUTTON_MODE_ID              4
+#define BUTTON_REC_ID               5
+#define GREEN_LED_GPIO            (-1)
 #define INPUT_KEY_DEFAULT_INFO() {                      \
      {                                                  \
-        .type = PERIPH_ID_BUTTON,                       \
+        .type = PERIPH_ID_ADC_BTN,                      \
         .user_id = INPUT_KEY_USER_ID_REC,               \
         .act_id = BUTTON_REC_ID,                        \
     },                                                  \
     {                                                   \
-        .type = PERIPH_ID_BUTTON,                       \
+        .type = PERIPH_ID_ADC_BTN,                      \
         .user_id = INPUT_KEY_USER_ID_MODE,              \
         .act_id = BUTTON_MODE_ID,                       \
     },                                                  \
     {                                                   \
-        .type = PERIPH_ID_TOUCH,                        \
+        .type = PERIPH_ID_ADC_BTN,                      \
         .user_id = INPUT_KEY_USER_ID_SET,               \
         .act_id = BUTTON_SET_ID,                        \
     },                                                  \
     {                                                   \
-        .type = PERIPH_ID_TOUCH,                        \
+        .type = PERIPH_ID_ADC_BTN,                      \
         .user_id = INPUT_KEY_USER_ID_PLAY,              \
         .act_id = BUTTON_PLAY_ID,                       \
     },                                                  \
     {                                                   \
-        .type = PERIPH_ID_TOUCH,                        \
+        .type = PERIPH_ID_ADC_BTN,                      \
         .user_id = INPUT_KEY_USER_ID_VOLUP,             \
         .act_id = BUTTON_VOLUP_ID,                      \
     },                                                  \
     {                                                   \
-        .type = PERIPH_ID_TOUCH,                        \
+        .type = PERIPH_ID_ADC_BTN,                      \
         .user_id = INPUT_KEY_USER_ID_VOLDOWN,           \
         .act_id = BUTTON_VOLDOWN_ID,                    \
     }                                                   \

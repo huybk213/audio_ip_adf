@@ -1,42 +1,72 @@
-# Example of ESP32-Korvo-DU1906 board
+# ESP32-Korvo-DU1906 Board
 
-This example shows how to use ESP32-Korvo-DU1906 board working with DuHome AIOT Voice Platform (度家-AIOT语音平台).The board supports features such as:
-- ASR, TTS and NLP
+- [中文版本](./README_CN.md)
+- Complex Example: ![alt text](../../../docs/_static/level_complex.png "Complex Example")
+
+
+## Example Brief
+
+This example demonstrates how the ESP32-Korvo-DU1906 development board works on the DuHome AIOT Voice Platform. The development board supports features such as:
+
+- ASR, TTS, and NLP
 - Bluetooth music
 - BLE Wi-Fi provisioning
 - OTA
 - Mesh and infrared controller
 
-The board together with the platform provide easy way to develop a smart speaker or AIOT device.
+The board together with the platform provides an easy way to develop a smart speaker or AIOT device.
 
-# How to use example
+## Environment Setup
 
-## Hardware Required
+### Hardware Required
 
-This example is will run on boards marked with green checkbox. Please remember to select the board in menuconfig as discussed is section *Usage* below.
+This example runs on the boards that are marked with a green checkbox in the [table](../README.md#compatibility-of-examples-with-espressif-audio-boards). Please remember to select the board in menuconfig as discussed in Section [Configuration](#configuration) below.
 
-| Board Name | Getting Started | Chip | Compatible |
-|-------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------:|:-----------------------------------------------------------------:|
-| ESP32-LyraT | [![alt text](../../docs/_static/esp32-lyrat-v4.3-side-small.jpg "ESP32-LyraT")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | <img src="../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../docs/_static/no-button.png "Compatible") |
-| ESP32-LyraTD-MSC | [![alt text](../../docs/_static/esp32-lyratd-msc-v2.2-small.jpg "ESP32-LyraTD-MSC")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyratd-msc.html) | <img src="../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../docs/_static/no-button.png "Compatible") |
-| ESP32-LyraT-Mini | [![alt text](../../docs/_static/esp32-lyrat-mini-v1.2-small.jpg "ESP32-LyraT-Mini")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html) | <img src="../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../docs/_static/no-button.png "Compatible") |
-| ESP32-Du1906 | ![alt text](../../docs/_static/esp32-korvo-du1906-v1.1-small.jpg "ESP32-Korvo-DUL1906") | <img src="../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../docs/_static/yes-button.png "Compatible") |
-| ESP32-S2-Kaluga-1 Kit | ![alt text](../../docs/_static/esp32-s2-kaluga-1-kit-small.png "ESP32-S2-Kaluga-1 Kit") | <img src="../../docs/_static/ESP32-S2.svg" height="100" alt="ESP32-S2"> | ![alt text](../../docs/_static/no-button.png "Compatible") |
 
-## Setup software environment
+### Setup Software Environment
 
 Please refer to [Get Started](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/index.html#get-started).
 
-## Authentication code
+### Authentication Code
 
-Please refer to [度家 AIOT 快速入门](https://cloud.baidu.com/doc/SHC/s/wk7bl9g8i) and apply for factory code (fc), product Key (pk), access key (ak) and secret key (sk) that should be then saved in `profiles/profile.bin`
+Please refer to [度家 AIOT 快速入门](https://cloud.baidu.com/doc/SHC/s/wk7bl9g8i) and apply for factory code (FC), product key (PK), access key (AK), and secret key (SK) that should be then saved in `profiles/profile.bin`.
 
-## Jumpstart the example
-No need to compile the project, just use the firmware in this example.
 
-The firmware downloading flash address refer to follow table.
+## Build and Flash
 
-Flash address | Bin Path
+### IDF branch
+
+The korvo_du1906 example only support the IDF [audio/stack_on_psram_v3.3](https://github.com/espressif/esp-idf/tree/audio/stack_on_psram_v3.3) branch.
+
+Select the IDF `audio/stack_on_psram_v3.3` branch as follows:
+
+```bash
+cd $IDF_PATH
+git checkout master
+git pull
+git checkout audio/stack_on_psram_v3.3
+git submodule update --init --recursive
+```
+The latest commit ID is `606dd2b629f264aa37a0d76fe23805d61bc6c712`
+
+### ADF Patches
+
+Required ADF patch is as follows:
+```bash
+cd $ADF_PATH
+git apply ./idf_patches/adf_http_stream.patch
+git apply ./examples/korvo_du1906/patches/a2dp_stream_du1906.patch
+```
+
+### Configuration
+
+#### Jumpstart the Example
+
+No need to build the project, just use the firmware in this example.
+
+Refer to the following table for the firmware downloading address.
+
+Flash Address | Bin Path
 ---|---
 0x1000 | bootloader.bin
 0x8000 | partitions.bin
@@ -46,11 +76,12 @@ Flash address | Bin Path
 0x7d9000 | audio_tone.bin
 0x7FF000 | profile.bin
 
-### Download firmware
+#### Download Firmware
 
-#### Linux operating system
+##### Linux Operating System
 
 Run the command below:
+
 ```bash
 python $ADF_PATH/esp-idf/components/esptool_py/esptool/esptool.py --chip esp32 \
 --port PORT --baud 921600 \
@@ -64,97 +95,48 @@ python $ADF_PATH/esp-idf/components/esptool_py/esptool/esptool.py --chip esp32 \
 0x7d9000 ./tone/audio_tone.bin \
 0x7FF000 ./profiles/profile.bin
 ```
-#### Windows operating system
+##### Windows Operating System
 
-- **step 1:** [Download the Flash Download Tool](https://www.espressif.com/en/support/download/other-tools) and unzip the compressed package, then run the executable file with ".exe" suffix.
-- **step 2:** Choose download mode (Developer Mode)
+- **Step 1:** Download the [Flash Download Tool](https://www.espressif.com/en/support/download/other-tools) and unzip the compressed package, then run the executable file with ".exe" suffix.
+
+- **Step 2:** Choose download mode (Developer Mode).
 
     <img src="./docs/pictures/tool_choose_mode.jpg" height="320" width="480" alt="Tool choose mode">
 
-- **step 3:** Choose chip (ESP32)
+- **Step 3:** Choose chip (ESP32).
 
     <img src="./docs/pictures/tool_choose_chip.jpg" height="640" width="480" alt="Tool choose chip">
 
-- **step 4:** open firmware directory (`$ADF_PATH/example/korvo_du1906/firmware`) and fill in the address according to the above flash address table.
+- **Step 4:** Open firmware directory (`$ADF_PATH/example/korvo_du1906/firmware`) and fill in the address according to the above flash address table.
 
     <img src="./docs/pictures/tool_download.png" height="640" width="480" alt="Tool download">
 
 **Note: The tone bin is in `$ADF_PATH/example/korvo_du1906/tone/audio_tone.bin` and profile.bin is in `$ADF_PATH/example/korvo_du1906/profile/profile.bin`**
 
-- **step 5:** Click `START` button on the graphical interface to download the firmware
+- **Step 5:** Click `START` button on the graphical interface to download the firmware.
 
-After download firmware, press `[RST]` button, and then there will be some logs print on the serial port.
+After download firmware, click `[RST]` button, and then there will be some logs printed on the serial port.
 
-### Network configuration
+#### Network Configuration
 
-- **step 1:** Download and install Blufi app on cell phone, [App for Andriod](https://github.com/EspressifApp/EspBlufiForAndroid/releases), [App for IOS](https://github.com/EspressifApp/EspBlufiForiOS/releases)
-- **step 2:** Open bluetooth and open blufi app on mobilephone, scan the device.
-- **step 3:** Press `[FUNC]` button on device for 4s, the device will enter wifi-setting mode, and play a tone music "请点击确认开始配网".
-- **step 4:** Fresh the scan list, there will be a device named "BLUFI_DEVICE", click it and choose `[连接]` on phone.
+- **Step 1:** Download and install BluFi app on cell phone, [App for Andriod](https://github.com/EspressifApp/EspBlufiForAndroid/releases)/[App for iOS](https://github.com/EspressifApp/EspBlufiForiOS/releases).
+- **Step 2:** Open Bluetooth and open BluFi app on the cell phone, then scan the device.
+- **Step 3:** Press `[FUNC]` button on device for 4 s, the device will enter Wi-Fi setting mode, and play a tone music "Click Confirm to Start Provisioning".
+- **Step 4:** Fresh the scan list, there will be a device named "BLUFI_DEVICE", click it and choose `[Connect]` on the phone.
 
     <img src="./docs/pictures/blufi_connect.png" height="640" width="480" alt="Blufi connect">
 
-- **step 5:** After connect to device, click `[配网]`, input wifi ssid and password that to connect.
-- **step 6:** Click `[确认]`, the device will acquire the wifi information and connect to network. If conenct to wifi successfully, the app will receive a string "hello world" and the device will play a tone music "网络连接成功".
+- **Step 5:** After the device is connected, click `[Provision]`, and input Wi-Fi SSID and password that to connect.
+- **Step 6:** Click `[Confirm]`, the device will acquire the Wi-Fi information and connect to the network. If the connection succeeds, the app will receive the string "hello world" and the device will play the tone music "Successfully Connected".
 
     <img src="./docs/pictures/blufi_config.png" height="640" width="480" alt="Blufi configuration">
 
-**Note: If configurate fails, check the above process and try again. Be careful and patient!**
-
-### Features experience
-
-**Note that, please make sure that there is a speaker inserts to the board at least.**
-
-#### Voice interaction
-
-After configurate wifi information and connect to network, you can start a conversation with a voice wake-up word "xiaodu xiaodu", such as below supported command:
-- "小度小度" "在呢" "讲个笑话"
-- "小度小度" "在呢" "上海天气怎么样？"
-- "小度小度" "在呢" "播放一首歌"
-- "小度小度" "在呢" "百度百科乐鑫信息科技"
-
-If you need more instructions, you can define them in the background of Baidu.
-
-#### bluetooth music
-
-Press `[MUTE]` button for 3-5s enter BT mode, open bluetooth on your phone and connect to device named "ESP_BT_COEX_DEV", and then you can play bt music on the device.
-
-#### Buttons usage
-Name of Button | Short press | Long press
-:-:|:-:|:-:
-VOL + | Volume up | NA
-VOL - | Volume down| NA
-MUTE | Enter mute mode |Enter/Exit BT mode
-FUNC | NA |Setting Wi-Fi
-
-## Build and flash
-
-After the experience, it's time to build the example now! you can also add some features by yourself and then build it.
-
-### IDF branch
-
-For now, we need to select audio IDF branch as follow.
-```bash
-cd $IDF_PATH
-git checkout master
-git pull
-git checkout audio/stack_on_psram_v3.3
-git submodule update --init --recursive
-```
-The latest commit ID is `606dd2b629f264aa37a0d76fe23805d61bc6c712`
-
-### ADF Patches
-For now, we need an ADF patch as follow.
-```bash
-cd $ADF_PATH
-git apply ./idf_patches/adf_http_stream.patch
-git apply ./examples/korvo_du1906/patches/a2dp_stream_du1906.patch
-```
+**Note: If configuration fails, check the above process and try again.**
 
 ### Build
 
 You can use `GNU make` or `cmake` to build the project.
-If you are using make:
+If you are using Make:
 ```bash
 cd $ADF_PATH/examples/korvo_du1906
 make clean
@@ -162,7 +144,7 @@ make menuconfig
 make -j4 all
 ```
 
-Or if you are using cmake:
+Or if you are using CMake:
 ```bash
 cd $ADF_PATH/examples/korvo_du1906
 idf.py fullclean
@@ -170,13 +152,13 @@ idf.py menuconfig
 idf.py build
 ```
 
-### Downloading
+### Flash
 
-Download application with make
+Download application with Make:
 ```bash
 make flash ESPPORT=PORT
 ```
-Or if you are using cmake
+Or if you are using CMake:
 ```bash
 idf.py flash -p PORT
 ```
@@ -194,54 +176,81 @@ python $ADF_PATH/esp-idf/components/esptool_py/esptool/esptool.py --chip esp32 \
 0x7FF000 ./profiles/profile.bin
 ```
 
-The firmware downloading flash address refer to above table in jumpstart part.
+Please refer to [Jumpstart the Example](#jumpstart-the-example) above for the firmware downloading flash address.
 
-### Usage
+## How to Use the Example
 
-Please refer to jumpstart part. The device should connect to an AP around first.
+### Example Functionality
 
-### Upgrade function
+**Note: Please make sure that there is at least a speaker inserted to the development board.**
 
-The application, flash tone, profile bins, dsp firmware and app firmware upgrade are supported. Those bins can be store on SDcard or HTTP Server, such as, "/sdcard/profile.bin", "https://github.com/espressif/esp-adf/raw/master/examples/korvo_du1906/firmware/app.bin".
+#### Voice Interaction
 
-#### Upgrade strategy
+After configuring Wi-Fi information and connecting to the network, you can start a conversation with the voice wake-up word "xiaodu xiaodu". Below are some supported command words:
 
-We have two kind of firmware ota strategy in this example like below.
-- Each partition to be upgraded has a separate URL. **(strategy 1)**
-- Combine different binary bins to a whole firmware and add a description header to the firmware and just need one URL to access it. **(strategy 2)**
+- "小度小度" "在呢" "讲个笑话"
+- "小度小度" "在呢" "上海天气怎么样？"
+- "小度小度" "在呢" "播放一首歌"
+- "小度小度" "在呢" "百度百科乐鑫信息科技"
 
-#### strategy 1 (default)
+If you need to define your own command words, please go to Baidu for instructions.
 
-Before the upgration, usually compare the firmware version first, and then judge whether the firmware need to be upgraded. (Sdcard ota in this example doesn't compare firmware version).
+#### Bluetooth Music
+
+Press `[MUTE]` key for 3-5 seconds to enter Bluetooth mode, open Bluetooth on your phone and connect to the device named "ESP_BT_COEX_DEV", and then you can play Bluetooth music on the device.
+
+#### Keys Functionality
+Name of Button | Short press | Long press
+:-:|:-:|:-:
+VOL + | Volume up | N/A
+VOL - | Volume down | N/A
+MUTE | Enter mute mode |Enter/Exit Bluetooth mode
+FUNC | N/A | Setting Wi-Fi
+
+
+### Upgrade Function
+
+The application, flash tone, profile bins, DSP firmware, and app firmware upgrade are supported. Those bins can be stored on a microSD card or an HTTP Server, such as, "/sdcard/profile.bin", "https://github.com/espressif/esp-adf/raw/master/examples/korvo_du1906/firmware/app.bin".
+
+#### Upgrade Strategy
+
+We have two kinds of firmware OTA strategies in this example as described below.
+- Each partition to be upgraded has a separate URL. **(Strategy 1)**
+- Combine different binary bins into a whole firmware and add a description header to the firmware and just need one URL to access it. **(Strategy 2)**
+
+##### Strategy 1 (Default)
+
+Before start upgrading, you usually need to compare the firmware version first, and then judge whether the firmware needs to be upgraded (microSD card OTA in this example doesn't compare firmware version).
 To edit the version of firmware like below:
-- App bin:  Change "version.txt" in the project directory and recompile.
-- Tone bin: Use this script to assign version ``` python  $ADF_PATH/tools/audio_tone/mk_audio_tone.py -r tone/ -f components/audio_flash_tone -v v1.1.1 ```
+- App bin: Change "version.txt" in the project directory and recompile.
+- Tone bin: Use this script to assign version `python $ADF_PATH/tools/audio_tone/mk_audio_tone.py -r tone/ -f components/audio_flash_tone -v v1.1.1`.
 
 The bin files version checking after every booting, exculde profile.bin.
-User copy the profile.bin to SDCard root folder and inserted to ESP32-Korvo-DU1906 sdcard slot could be execute profile bin upgrade.
+User copy the profile.bin to microSD card root folder and inserted to ESP32-Korvo-DU1906 microSD card slot could be execute the profile.bin upgrade.
 
-The app will wait 15s for wifi connection. If wifi connect, the ota process will start, if not, skip it.
+The app will wait 15 s for Wi-Fi connection. If the connection succeeds, the OTA process will start; if not, skip it.
 
-#### strategy 2
+##### Strategy 2
 
-To use ota strategy 2, some patchs should be applied first.
+To use OTA strategy 2, some patchs should be applied first.
 ```bash
 cd $ADF_PATH; git apply $ADF_PATH/examples/korvo_du1906/patches/adf_ota_patch.patch
 ```
-Use script under tools directory to assign version
+Use script under tools directory to assign version.
 ```bash
 cd $ADF_PATH/examples/korvo_du1906/tools/iot_ota_pkg_generator
 python mk_ota_bin.py -c tda -st x.x.x -sd x.x.x -sa x.x.x -v xxx -p ../../
 ```
 Use ``` python mk_ota_bin.py -h ``` to get more information about the script.
 
-After execute the script, there will be a combine firmware named "combine_ota_default.bin" generated under the directory. Put the firmware on your website and update the upgrade URL.
+After the script is executed, there will be a combined firmware named "combine_ota_default.bin" generated under the directory. Put the firmware on your website and update the URL.
 
-Press button `[VOL +]` to excute ota process.
+Press button `[VOL +]` to excute OTA process.
 
-## Example Output
+### Example Log
 
-After download the follow logs should be output.
+A complete log is as follows:
+
 ```c
 I (64) boot: Chip Revision: 3
 I (35) boot: ESP-IDF v3.3.1-203-g0c1859a5a 2nd stage bootloader
@@ -531,7 +540,7 @@ W (30202) MQTT_TASK: Stack: 2352
 
 ## Troubleshooting
 
-### Incorrect `fc`, `pk`, `ak` and `sk`.
+### Incorrect `fc`, `pk`, `ak`, and `sk`.
 
 ```c
 I (4499) RAW_HELPER: default_raw_player_init :106, que:0x3ffe8804
@@ -583,7 +592,7 @@ E (6118) AUTH_TASK: auth failed, retry!
 ==> generate_auth_pam
 ```
 
-### Missing `phy_init_data.bin`
+### Missing `phy_init_data.bin`.
 
 ```c
 I (64) boot: Chip Revision: 3
@@ -699,3 +708,11 @@ Backtrace: 0x40092d4b:0x3ffd1840 0x40092fe1:0x3ffd1860 0x400d2117:0x3ffd1880 0x4
 
 0x400f77e5: wpa_remove_ptk at ??:?
 ```
+
+## Technical Support and Feedback
+Please use the following feedback channels:
+
+* For technical queries, go to the [esp32.com](https://esp32.com/viewforum.php?f=20) forum
+* For a feature request or bug report, create a [GitHub issue](https://github.com/espressif/esp-adf/issues)
+
+We will get back to you as soon as possible.

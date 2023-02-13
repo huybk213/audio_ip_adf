@@ -5,11 +5,11 @@
 
 ## Example Brief
 
-- ESP VoIP is a telephone client based on the standard SIP protocol, which can be used in some P2P or audio conference scenarios.
+ESP VoIP is a telephone client based on the standard SIP protocol, which can be used in some P2P or audio conference scenarios.
 
 ### Resources
 
-- Memory consumption:
+Memory consumption:
 
 esp32-lyrat-mini-v1.2:
 
@@ -32,15 +32,7 @@ other boards:
 
 ### Hardware Required
 
-This example runs on the boards that are marked with a green checkbox in the table below. Please remember to select the board in menuconfig as discussed in Section *Configuration* below.
-
-| Board Name | Getting Started | Chip | Compatible |
-|-------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------:|:-----------------------------------------------------------------:|
-| ESP32-LyraT | [![alt text](../../../docs/_static/esp32-lyrat-v4.3-side-small.jpg "ESP32-LyraT")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "Compatible") |
-| ESP32-LyraTD-MSC | [![alt text](../../../docs/_static/esp32-lyratd-msc-v2.2-small.jpg "ESP32-LyraTD-MSC")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyratd-msc.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "Compatible") |
-| ESP32-LyraT-Mini | [![alt text](../../../docs/_static/esp32-lyrat-mini-v1.2-small.jpg "ESP32-LyraT-Mini")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "Compatible") |
-| ESP32-Korvo-DU1906 | [![alt text](../../../docs/_static/esp32-korvo-du1906-v1.1-small.jpg "ESP32-Korvo-DU1906")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-korvo-du1906.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/no-button.png "Compatible") |
-| ESP32-S2-Kaluga-1 Kit | [![alt text](../../../docs/_static/esp32-s2-kaluga-1-kit-small.png "ESP32-S2-Kaluga-1 Kit")](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html) | <img src="../../../docs/_static/ESP32-S2.svg" height="100" alt="ESP32-S2"> | ![alt text](../../../docs/_static/no-button.png "Compatible") |
+This example runs on the boards that are marked with a green checkbox in the [table](../../README.md#compatibility-of-examples-with-espressif-audio-boards). Please remember to select the board in menuconfig as discussed in Section [Configuration](#configuration) below.
 
 ### Additional Requirements
 
@@ -51,21 +43,21 @@ This example runs on the boards that are marked with a green checkbox in the tab
   - [Asterisk for Raspberry Pi](http://www.raspberry-asterisk.org/)
 
   - [Freeswitch](https://freeswitch.org/confluence/display/FREESWITCH/Installation)
-      - Recommended to turn off the server event `NOTIFY` by:
-        ```
-        setting `<param name="send-message-query-on-register" value="false"/>` in `conf/sip_profiles/internal.xml`
-        ```
-      - Recommended to delete the unsupported Video Codec in `conf/vars.xml`
+      - Recommended to turn off the server event `NOTIFY` by setting `<param name="send-message-query-on-register" value="false"/>` in `conf/sip_profiles/internal.xml`.
+      - Recommended to turn off the server timer by setting `<param name="enable-timer" value="false"/>` in `conf/sip_profiles/internal.xml`.
+      - Recommended to delete the unsupported Video Codec in `conf/vars.xml`.
 
   - [Kamailio](https://kamailio.org/docs/tutorials/5.3.x/kamailio-install-guide-git/)
 
   - [Yate Server](http://docs.yate.ro/wiki/Beginners_in_Yate)
 
+- We recommend building a Freeswitch server for testing.
+
 ## Example Set Up
 
 ### Default IDF Branch
 
-The default IDF branch of this example is ADF's built-in branch `$ADF_PATH/esp-idf`.
+This example supports IDF release/v3.3 and later branches. By default, it runs on ADF's built-in branch `$ADF_PATH/esp-idf`.
 
 ### Configuration
 
@@ -112,7 +104,8 @@ See the Getting Started Guide for full steps to configure and use [ESP-IDF Progr
 - After the server is connected, you can press the `Play` button to make a call or answer an incoming call, and the `Mode` button to hang up or cancel the call.
 - The `Vol+` and `Vol-` keys can adjust the call volume of the development board. On the `esp32-lyrat-mini` development board, you can press the `Rec` key to mute the `MIC`.
 - You can use the Open source clients such as Linphone or MicroSIP to make VoIP calls with the development board.
-- About the Acoustic Echo Cancellation, currently the software solution only supports the `esp32-lyrat-mini` development board, you can also choose the `esp32-lyratd-msc` development board or other hardware with AEC function to complete it.
+- If the AEC effect is not very good, you can open the `DEBUG_AEC_INPUT` define to get the original input data (left channel is the signal captured from the microphone, and right channel is the signal played to the speaker), and then check the delay with an audio analysis tool.
+- The AEC internal buffering mechanism requires that the recording signal is delayed by around 0 - 10 ms compared to the corresponding reference (playback) signal.
 
 ### Example Logs
 

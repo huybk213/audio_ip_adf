@@ -1,71 +1,69 @@
 # Algorithm examples
 
-The example shows how to use algorithm API, and algorithm API contains AEC, AGC and NS.
+- [中文版本](./README_CN.md)
+- Basic Example: ![alt text](../../../docs/_static/level_basic.png "Basic Example")
 
-## 1. How to use example
+## Example Brief
+
+This example is to play music while performing echo cancellation of the sound recorded by the microphone, and then save it to the microSD card.
+
+This algorithm example has two pipelines. One is to play the MP3 file in the flash, and the other is to record the audio. First, the audio is processed by the algorithm of AEC, AGC, and NS, and then is encoded into the WAV format and saved in the microSD card. At last we compare the original audio with the recorded audio.
+
+- Playing MP3 pipeline:
+
+  ```c
+  [flash] ---> mp3_decoder ---> filter ---> i2s_stream ---> [codec_chip]
+  ```
+
+- Recording WAV pipeline:
+
+  ```c
+  [codec_chip] ---> i2s_stream ---> filter ---> algorithm ---> wav_encoder ---> fatfs_stream ---> [sdcard]
+  ```
+
+
+## Environment Setup
 
 #### Hardware Required
 
-This example is will run on boards marked with green checkbox. Please remember to select the board in menuconfig as discussed is section *Usage* below.
+This example runs on the boards that are marked with a green checkbox in the [table](../../README.md#compatibility-of-examples-with-espressif-audio-boards). Please remember to select the board in menuconfig as discussed in Section [Configuration](#configuration) below.
 
-| Board Name | Getting Started | Chip | Compatible |
-|-------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------:|:-----------------------------------------------------------------:|
-| ESP32-LyraT | [![alt text](../../../docs/_static/esp32-lyrat-v4.3-side-small.jpg "ESP32-LyraT")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "Compatible") |
-| ESP32-LyraTD-MSC | [![alt text](../../../docs/_static/esp32-lyratd-msc-v2.2-small.jpg "ESP32-LyraTD-MSC")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyratd-msc.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/no-button.png "Compatible") |
-| ESP32-LyraT-Mini | [![alt text](../../../docs/_static/esp32-lyrat-mini-v1.2-small.jpg "ESP32-LyraT-Mini")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "Compatible") |
-| ESP32-Korvo-DU1906 | [![alt text](../../../docs/_static/esp32-korvo-du1906-v1.1-small.jpg "ESP32-Korvo-DU1906")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-korvo-du1906.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/no-button.png "Compatible") |
-| ESP32-S2-Kaluga-1 Kit | [![alt text](../../../docs/_static/esp32-s2-kaluga-1-kit-small.png "ESP32-S2-Kaluga-1 Kit")](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html) | <img src="../../../docs/_static/ESP32-S2.svg" height="100" alt="ESP32-S2"> | ![alt text](../../../docs/_static/no-button.png "Compatible") |
+
+## Example Set Up
+
+### Default IDF Branch
+
+This example supports IDF release/v3.3 and later branches. By default, it runs on ADF's built-in branch `$ADF_PATH/esp-idf`.
+
+### Configuration
 
 Prepare the audio board:
 
 - Insert a microSD card required memory of 1 MB into board's SD card slot.
-- Insert a microSD card loaded with a MP3 file 'test.mp3' into board's slot.
 
-## 2. Setup software environment
+Load and run the example:
 
-Please refer to [Get Started](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/index.html#get-started).
+- The board will start playing automatically.
+- After finish, you can open `/sdcard/aec_out.wav` to hear the recorded file.
 
-#### Configure the project
-cmake menuconfig:
-```
-idf.py menuconfig
-```
-Or use legacy GNU make:
-```
-make menuconfig
-```
-Select compatible audio board in ``menuconfig > Audio HAL``, then compile the example.
 
-#### Build and Flash
-You can use `GNU make` or `cmake` to build the project.
-If you are using make:
-```bash
-cd $ADF_PATH/examples/advanced_examples/algorithm
-make clean
-make menuconfig
-make -j4 all
-```
+### Build and Flash
+Build the project and flash it to the board, then run monitor tool to view serial output (replace `PORT` with your board's serial port name):
 
-Or if you are using cmake:
-```bash
-cd $ADF_PATH/examples/advanced_examples/algorithm
-idf.py fullclean
-idf.py menuconfig
-idf.py build
+```c
+idf.py -p PORT flash monitor
 ```
-The firmware downloading flash address refer to follow table.
-
-|Flash address | Bin Path|
-|---|---|
-|0x1000 | build/bootloader/bootloader.bin|
-|0x8000 | build/partitiontable/partition-table.bin|
-|0x10000 | build/algorithm_examples.bin|
 
 To exit the serial monitor, type ``Ctrl-]``.
 
-## 3. Example Output
+See the Getting Started Guide for full steps to configure and use [ESP-IDF Programming Guide](https://docs.espressif.com/projects/esp-idf/en/release-v4.2/esp32/index.html) to build projects.
 
-After download the follow logs should be output, here:
+
+## How to use the Example
+
+### Example Functionality
+
+After download the follow log should be output:
 
 ```
 I (10) boot: ESP-IDF v3.3.2-107-g722043f 2nd stage bootloader
@@ -137,14 +135,20 @@ I (807) ALGORITHM_EXAMPLES: [5.1] Listening event from all elements of pipeline
 I (815) ALGORITHM_EXAMPLES: [5.2] Listening event from peripherals
 I (821) ALGORITHM_EXAMPLES: [6.0] Start audio_pipeline
 I (869) ALGORITHM_EXAMPLES: [7.0] Listen for all pipeline events
-
 ```
 
-Load and run the example:
 
-- The board will start playing automatically.
-- After finish, you can open `/sdcard/rec_out.wav` to hear the recorded file.
+## Troubleshooting
 
-## 4. Troubleshooting
+- If the AEC effect is not very good, you can open the `DEBUG_ALGO_INPUT` define to get the original input data (left channel is the signal captured from the microphone, and right channel is the signal played to the speaker), and then check the delay with an audio analysis tool.
 
-- - If the AEC effect is not very good, you can set all the sampling rates to 16000.
+- The AEC internal buffering mechanism requires that the recording signal is delayed by around 0 - 10 ms compared to the corresponding reference (playback) signal.
+
+## Technical support and feedback
+
+Please use the following feedback channels:
+
+* For technical queries, go to the [esp32.com](https://esp32.com/viewforum.php?f=20) forum
+* For a feature request or bug report, create a [GitHub issue](https://github.com/espressif/esp-adf/issues)
+
+We will get back to you as soon as possible.
