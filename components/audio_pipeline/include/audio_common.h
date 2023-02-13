@@ -54,6 +54,19 @@ typedef enum {
     AUDIO_CODEC_TYPE_ENCODER
 } audio_codec_type_t;
 
+typedef enum {
+    AUDIO_CODEC_NONE = 0,
+    AUDIO_CODEC_RAW,
+    AUDIO_CODEC_WAV,
+    AUDIO_CODEC_MP3,
+    AUDIO_CODEC_AAC,
+    AUDIO_CODEC_OPUS,
+    AUDIO_CODEC_M4A,
+    AUDIO_CODEC_TS,
+    AUDIO_CODEC_AMR,
+    AUDIO_PLAYLIST
+} audio_codec_t;
+
 #define mem_assert(x)
 
 #ifdef __cplusplus

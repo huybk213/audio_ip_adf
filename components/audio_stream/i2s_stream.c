@@ -220,6 +220,9 @@ static int _i2s_read(audio_element_handle_t self, char *buffer, int len, TickTyp
         }
 #endif
     }
+    else {
+        ESP_LOGW(TAG, "_i2s_read : read %d bytes", bytes_read);
+    }
     return bytes_read;
 }
 

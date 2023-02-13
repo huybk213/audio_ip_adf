@@ -240,6 +240,11 @@ esp_err_t es8388_set_mic_gain(es_mic_gain_t gain);
  */
 esp_err_t es8388_config_adc_input(es_adc_input_t input);
 
+// HuyTV
+esp_err_t es8388_set_adc_input(audio_hal_adc_input_t input);
+esp_err_t es8388_set_adc_input_gain(int input_gain);
+
+
 /**
  * @brief Set ES8388 dac output mode
  *
@@ -304,6 +309,15 @@ esp_err_t es8388_ctrl_state(audio_hal_codec_mode_t mode, audio_hal_ctrl_t ctrl_s
  *      - void
  */
 void es8388_pa_power(bool enable);
+
+/**
+ * @brief Bypass Lin,Rin to Lout-Rout
+ *
+ *
+ * @return
+ *      - esp_err_t
+ */
+esp_err_t es8388_bypass_lin_rin_to_lout_rout(void);
 
 #ifdef __cplusplus
 }

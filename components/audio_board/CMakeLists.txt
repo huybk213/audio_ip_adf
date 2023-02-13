@@ -23,6 +23,24 @@ set(COMPONENT_SRCS
 )
 endif()
 
+if (CONFIG_ESP_LYRAT_V4_3_BOARD_BYT)
+message(STATUS "Current board name is " CONFIG_ESP_LYRAT_V4_3_BOARD_BYT)
+list(APPEND COMPONENT_ADD_INCLUDEDIRS ./lyrat_v4_3_byt)
+set(COMPONENT_SRCS
+./lyrat_v4_3_byt/board.c
+./lyrat_v4_3_byt/board_pins_config.c
+)
+endif()
+
+if (CONFIG_ESP_LYRAT_V4_3_BOARD_BYT_V102)
+message(STATUS "Current board name is " CONFIG_ESP_LYRAT_V4_3_BOARD_BYT_V102)
+list(APPEND COMPONENT_ADD_INCLUDEDIRS ./lyrat_v4_3_byt_v102)
+set(COMPONENT_SRCS
+./lyrat_v4_3_byt_v102/board.c
+./lyrat_v4_3_byt_v102/board_pins_config.c
+)
+endif()
+
 if (CONFIG_ESP_LYRAT_MINI_V1_1_BOARD)
 message(STATUS "Current board name is " CONFIG_ESP_LYRAT_MINI_V1_1_BOARD)
 list(APPEND COMPONENT_ADD_INCLUDEDIRS ./lyrat_mini_v1_1)
@@ -76,6 +94,15 @@ list(APPEND COMPONENT_ADD_INCLUDEDIRS ./esp32_s3_korvo2_v3)
 set(COMPONENT_SRCS
 ./esp32_s3_korvo2_v3/board.c
 ./esp32_s3_korvo2_v3/board_pins_config.c
+)
+endif()
+
+if (CONFIG_ESP_LYRAT_V4_3_BOARD_BYT_AUDIO_IP)
+message(STATUS "Current board name is " CONFIG_ESP_LYRAT_V4_3_BOARD_BYT_AUDIO_IP)
+list(APPEND COMPONENT_ADD_INCLUDEDIRS ./lyrat_v4_3_byt_audio_ip)
+set(COMPONENT_SRCS
+./lyrat_v4_3_byt_audio_ip/board.c
+./lyrat_v4_3_byt_audio_ip/board_pins_config.c
 )
 endif()
 

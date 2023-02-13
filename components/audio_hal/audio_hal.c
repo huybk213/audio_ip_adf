@@ -38,7 +38,7 @@ static const char *TAG = "AUDIO_HAL";
         return b;\
     }
 
-audio_hal_handle_t audio_hal_init(audio_hal_codec_config_t *audio_hal_conf, audio_hal_func_t *audio_hal_func)
+audio_hal_handle_t audio_hal_init(audio_hal_codec_config_t *audio_hal_conf, audio_hal_func_t *audio_hal_func, int volume)
 {
     esp_err_t ret = 0;
     audio_hal_handle_t audio_hal = (audio_hal_handle_t) audio_calloc(1, sizeof(audio_hal_func_t));
@@ -62,7 +62,11 @@ audio_hal_handle_t audio_hal_init(audio_hal_codec_config_t *audio_hal_conf, audi
         }
     }
     ret |= audio_hal->audio_codec_config_iface(audio_hal_conf->codec_mode, &audio_hal_conf->i2s_iface);
-    ret |= audio_hal->audio_codec_set_volume(AUDIO_HAL_VOL_DEFAULT);
+    ret |= audio_hal->audio_codec_set_volume(volume);
+    if(ret == 0)
+		ESP_LOGI(TAG, "audio_codec_set_volume: OK");
+	else
+		ESP_LOGE(TAG, "audio_codec_set_volume: FAILED");
     audio_hal->handle = audio_hal;
     audio_hal_func->handle = audio_hal;
     mutex_unlock(audio_hal->audio_hal_lock);
@@ -134,3 +138,56 @@ esp_err_t audio_hal_get_volume(audio_hal_handle_t audio_hal, int *volume)
     mutex_unlock(audio_hal->audio_hal_lock);
     return ret;
 }
+
+esp_err_t audio_hal_set_input(audio_hal_handle_t audio_hal, audio_hal_adc_input_t input_channel)
+{
+    esp_err_t ret;
+    AUDIO_HAL_CHECK_NULL(audio_hal, "audio_hal handle is null", -1);
+    mutex_lock(audio_hal->audio_hal_lock);
+    ret = audio_hal->audio_codec_set_adc_input(input_channel);
+    mutex_unlock(audio_hal->audio_hal_lock);
+    return ret;
+}
+
+esp_err_t audio_hal_set_input_gain(audio_hal_handle_t audio_hal, int input_gain)
+{
+    esp_err_t ret;
+    AUDIO_HAL_CHECK_NULL(audio_hal, "audio_hal handle is null", -1);
+    mutex_lock(audio_hal->audio_hal_lock);
+    ret = audio_hal->audio_codec_set_adc_input_gain(input_gain);
+    mutex_unlock(audio_hal->audio_hal_lock);
+    return ret;
+}
+
+esp_err_t audio_hal_bypass_lin_rin_to_lout_rout(audio_hal_handle_t audio_hal)
+{
+    esp_err_t ret;
+    AUDIO_HAL_CHECK_NULL(audio_hal, "audio_hal handle is null", -1);
+    mutex_lock(audio_hal->audio_hal_lock);
+    ret = audio_hal->audio_codec_bypass_lin_rin_to_lout_rout();
+    mutex_unlock(audio_hal->audio_hal_lock);
+    return ret;
+}
+
+/*!< i2c read slave */
+esp_err_t audio_hal_i2c_master_read(audio_hal_handle_t audio_hal, uint8_t slave_addr, uint8_t *data_rd, uint8_t size)				
+{
+	esp_err_t ret;
+    AUDIO_HAL_CHECK_NULL(audio_hal, "audio_hal handle is null", -1);
+    mutex_lock(audio_hal->audio_hal_lock);
+    ret = audio_hal->codec_i2c_master_read(slave_addr, data_rd, size);
+    mutex_unlock(audio_hal->audio_hal_lock);
+    return ret;
+}
+
+/*!< i2c write slave */
+esp_err_t audio_hal_i2c_master_write(audio_hal_handle_t audio_hal, uint8_t slave_addr, uint8_t *data_wr, uint8_t size)
+{
+	esp_err_t ret;
+	AUDIO_HAL_CHECK_NULL(audio_hal, "audio_hal handle is null", -1);
+	mutex_lock(audio_hal->audio_hal_lock);
+	ret = audio_hal->codec_i2c_master_write(slave_addr, data_wr, size);
+	mutex_unlock(audio_hal->audio_hal_lock);
+	return ret;
+}
+
