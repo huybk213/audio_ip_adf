@@ -163,6 +163,7 @@ static void bt_a2d_sink_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *p_param
 
                 audio_element_set_music_info(g_bt_service->stream, sample_rate, 2, 16);
                 audio_element_report_info(g_bt_service->stream);
+                esp_periph_send_event(g_bt_service->periph, PERIPH_BLUETOOTH_AUDIO_REPORT_SAMPLE_RATE, (void*)sample_rate, 4);
             }
             break;
         default:
@@ -173,9 +174,20 @@ static void bt_a2d_sink_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *p_param
 
 static void bt_a2d_sink_data_cb(const uint8_t *data, uint32_t len)
 {
+    static uint32_t auto_report = 0;
     if (g_bt_service->stream) {
-        if (audio_element_get_state(g_bt_service->stream) == AEL_STATE_RUNNING) {
+        // ESP_LOGI(TAG, "[%s] size = %u", __FUNCTION__, len);
+        audio_element_state_t state = audio_element_get_state(g_bt_service->stream);
+        if (state == AEL_STATE_RUNNING) {
+            auto_report++;
             audio_element_output(g_bt_service->stream, (char *)data, len);
+            if (auto_report++ > 240 && g_bt_service->periph) {
+                auto_report = 0;
+                esp_periph_send_event(g_bt_service->periph, PERIPH_BLUETOOTH_AUDIO_REPORT_STREAM_RUNNING, NULL, 0);
+            }
+        } else {
+            auto_report = 0;
+            // ESP_LOGI(TAG, "[%s] state = %u", __FUNCTION__, state);
         }
     }
 }
