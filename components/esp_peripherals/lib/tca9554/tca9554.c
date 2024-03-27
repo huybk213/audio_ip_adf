@@ -56,12 +56,13 @@ static uint8_t tca9554_addr;
 static esp_err_t expander_dev_prob()
 {
     for (size_t i = 0; i < sizeof(dev_list) / sizeof(dev_list[0]); i++) {
-        if (ESP_OK == i2c_bus_probe_addr(i2c_handle, dev_list[i].addr)) {
-            ESP_LOGI(TAG, "Detected IO expander device at 0x%02X, name is: %s",
-                     dev_list[i].addr, dev_list[i].name);
-            tca9554_addr = dev_list[i].addr;
-            return ESP_OK;
-        }
+        // if (ESP_OK == i2c_bus_probe_addr(i2c_handle, dev_list[i].addr)) {
+        //     ESP_LOGI(TAG, "Detected IO expander device at 0x%02X, name is: %s",
+        //              dev_list[i].addr, dev_list[i].name);
+        //     tca9554_addr = dev_list[i].addr;
+        //     return ESP_OK;
+        // }
+        return ESP_OK;
     }
     tca9554_addr = 0;
     ESP_LOGE(TAG, "IO expander device has not detected");

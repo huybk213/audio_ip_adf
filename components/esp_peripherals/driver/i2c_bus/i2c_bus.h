@@ -125,6 +125,39 @@ esp_err_t i2c_bus_cmd_begin(i2c_bus_handle_t bus, i2c_cmd_handle_t cmd, portBASE
  */
 esp_err_t i2c_bus_probe_addr(i2c_bus_handle_t bus, uint8_t addr);
 
+/**
+ * @brief Read bytes to I2C bus with 2 byte reg address
+ *
+ * @param bus        I2C bus handle
+ * @param addr       The address of the device
+ * @param reg        The register of the device
+ * @param regLen     The length of register
+ * @param outdata    The outdata pointer
+ * @param datalen        The length of outdata
+ *
+ * @return
+ *     - NULL Fail
+ *     - Others Success
+ */
+esp_err_t i2c_bus_read_bytes_uhf(i2c_bus_handle_t bus, int addr, uint16_t reg, int reglen, uint8_t *outdata, int datalen);
+
+/**
+ * @brief Write bytes to I2C bus with 2 byte reg address
+ *
+ * @param bus        I2C bus handle
+ * @param addr       The address of the device
+ * @param reg        The register of the device
+ * @param regLen     The length of register
+ * @param data       The data pointer
+ * @param datalen    The length of data
+ *
+ * @return
+ *     - NULL Fail
+ *     - Others Success
+ */
+esp_err_t i2c_bus_write_bytes_uhf(i2c_bus_handle_t bus, int addr, uint16_t reg, int regLen, uint8_t *data, int datalen);
+
+
 #ifdef __cplusplus
 }
 #endif

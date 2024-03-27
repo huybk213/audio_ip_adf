@@ -29,6 +29,7 @@
 #include "audio_hal.h"
 #include "driver/i2c.h"
 #include "esxxx_common.h"
+#include "i2c_bus.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -318,6 +319,15 @@ void es8388_pa_power(bool enable);
  *      - esp_err_t
  */
 esp_err_t es8388_bypass_lin_rin_to_lout_rout(void);
+
+/**
+ * @brief Get i2c handle
+ *
+ *
+ * @return
+ *      - i2c_handle
+ */
+i2c_bus_handle_t es8388_get_i2c_handle(void);
 
 #ifdef __cplusplus
 }

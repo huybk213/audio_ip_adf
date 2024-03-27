@@ -95,14 +95,14 @@ static void bt_a2d_sink_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *p_param
         case ESP_A2D_CONNECTION_STATE_EVT:
             a2d = (esp_a2d_cb_param_t *)(p_param);
             uint8_t *bda = a2d->conn_stat.remote_bda;
-            ESP_LOGD(TAG, "A2DP connection state: %s, [%02x:%02x:%02x:%02x:%02x:%02x]",
+            ESP_LOGI(TAG, "A2DP connection state: %s, [%02x:%02x:%02x:%02x:%02x:%02x]",
                      conn_state_str[a2d->conn_stat.state], bda[0], bda[1], bda[2], bda[3], bda[4], bda[5]);
 
             if (g_bt_service->connection_state == ESP_A2D_CONNECTION_STATE_DISCONNECTED
                 && a2d->conn_stat.state == ESP_A2D_CONNECTION_STATE_CONNECTED) {
                 memcpy(&g_bt_service->remote_bda, &a2d->conn_stat.remote_bda, sizeof(esp_bd_addr_t));
                 g_bt_service->connection_state = a2d->conn_stat.state;
-                ESP_LOGD(TAG, "A2DP connection state = CONNECTED");
+                ESP_LOGI(TAG, "A2DP connection state = CONNECTED");
                 if (g_bt_service->periph) {
                     esp_periph_send_event(g_bt_service->periph, PERIPH_BLUETOOTH_CONNECTED, NULL, 0);
                 }
@@ -112,7 +112,7 @@ static void bt_a2d_sink_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *p_param
                 && a2d->conn_stat.state == ESP_A2D_CONNECTION_STATE_DISCONNECTED) {
                 memset(&g_bt_service->remote_bda, 0, sizeof(esp_bd_addr_t));
                 g_bt_service->connection_state = ESP_A2D_CONNECTION_STATE_DISCONNECTED;
-                ESP_LOGD(TAG, "A2DP connection state =  DISCONNECTED");
+                ESP_LOGI(TAG, "A2DP connection state =  DISCONNECTED");
                 if (g_bt_service->stream) {
                     audio_element_report_status(g_bt_service->stream, AEL_STATUS_INPUT_DONE);
                 }
@@ -124,7 +124,7 @@ static void bt_a2d_sink_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *p_param
             break;
         case ESP_A2D_AUDIO_STATE_EVT:
             a2d = (esp_a2d_cb_param_t *)(p_param);
-            ESP_LOGD(TAG, "A2DP audio state: %s", audio_state_str[a2d->audio_stat.state]);
+            ESP_LOGI(TAG, "A2DP audio state: %s", audio_state_str[a2d->audio_stat.state]);
             g_bt_service->audio_state = a2d->audio_stat.state;
             if (ESP_A2D_AUDIO_STATE_STARTED == a2d->audio_stat.state) {
                 g_bt_service->pos = 0;
@@ -144,7 +144,7 @@ static void bt_a2d_sink_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *p_param
             break;
         case ESP_A2D_AUDIO_CFG_EVT:
             a2d = (esp_a2d_cb_param_t *)(p_param);
-            ESP_LOGD(TAG, "A2DP audio stream configuration, codec type %d", a2d->audio_cfg.mcc.type);
+            ESP_LOGI(TAG, "A2DP audio stream configuration, codec type %d", a2d->audio_cfg.mcc.type);
             if (a2d->audio_cfg.mcc.type == ESP_A2D_MCT_SBC) {
                 int sample_rate = 16000;
                 char oct0 = a2d->audio_cfg.mcc.cie.sbc[0];
@@ -156,7 +156,7 @@ static void bt_a2d_sink_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *p_param
                     sample_rate = 48000;
                 }
                 g_bt_service->a2dp_sample_rate = sample_rate;
-                ESP_LOGD(TAG, "Bluetooth configured, sample rate=%d", sample_rate);
+                ESP_LOGI(TAG, "Bluetooth configured, sample rate=%d", sample_rate);
                 if (g_bt_service->stream == NULL) {
                     break;
                 }
@@ -167,7 +167,7 @@ static void bt_a2d_sink_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *p_param
             }
             break;
         default:
-            ESP_LOGD(TAG, "Unhandled A2DP event: %d", event);
+            ESP_LOGI(TAG, "Unhandled A2DP event: %d", event);
             break;
     }
 }
@@ -500,7 +500,12 @@ esp_err_t bluetooth_service_start(bluetooth_service_cfg_t *config)
         return ESP_FAIL;
     }
 
-    if (esp_bt_controller_enable(ESP_BT_MODE_BTDM) != ESP_OK) {
+    // if (esp_bt_controller_enable(ESP_BT_MODE_BTDM) != ESP_OK) {
+    //     AUDIO_ERROR(TAG, "enable controller failed");
+    //     return ESP_FAIL;
+    // }
+
+    if (esp_bt_controller_enable(ESP_BT_MODE_CLASSIC_BT) != ESP_OK) {
         AUDIO_ERROR(TAG, "enable controller failed");
         return ESP_FAIL;
     }

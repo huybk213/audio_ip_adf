@@ -124,11 +124,11 @@ esp_err_t periph_sdcard_mount(esp_periph_handle_t periph)
 
     int ret = sdcard_mount(sdcard->root, sdcard->sd_mode);
     if (ret == ESP_OK) {
-        ESP_LOGD(TAG, "Mount SDCARD success");
+        ESP_LOGI(TAG, "Mount SDCARD success");
         sdcard->is_mounted = true;
         return esp_periph_send_event(periph, SDCARD_STATUS_MOUNTED, NULL, 0);
     } else if (ret == ESP_ERR_INVALID_STATE) {
-        ESP_LOGD(TAG, "periph sdcard handle already mounted!");
+        ESP_LOGI(TAG, "periph sdcard handle already mounted!");
         return ESP_OK;
     } else {
         esp_periph_send_event(periph, SDCARD_STATUS_MOUNT_ERROR, NULL, 0);
@@ -144,7 +144,7 @@ esp_err_t periph_sdcard_unmount(esp_periph_handle_t periph)
     periph_sdcard_t *sdcard = esp_periph_get_data(periph);
     int ret = sdcard_unmount();
     if (ret == ESP_OK) {
-        ESP_LOGD(TAG, "UnMount SDCARD success");
+        ESP_LOGI(TAG, "UnMount SDCARD success");
         sdcard->is_mounted = false;
         return esp_periph_send_event(periph, SDCARD_STATUS_UNMOUNTED, NULL, 0);
     } else {

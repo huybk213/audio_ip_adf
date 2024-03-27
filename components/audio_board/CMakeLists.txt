@@ -41,6 +41,16 @@ set(COMPONENT_SRCS
 )
 endif()
 
+if (CONFIG_BOARD_TRO_GIANG)
+message(STATUS "Current board name is " CONFIG_BOARD_TRO_GIANG)
+list(APPEND COMPONENT_ADD_INCLUDEDIRS ./tro_giang)
+set(COMPONENT_SRCS
+./tro_giang/board.c
+./tro_giang/board_pins_config.c
+)
+endif()
+
+
 if (CONFIG_ESP_LYRAT_MINI_V1_1_BOARD)
 message(STATUS "Current board name is " CONFIG_ESP_LYRAT_MINI_V1_1_BOARD)
 list(APPEND COMPONENT_ADD_INCLUDEDIRS ./lyrat_mini_v1_1)

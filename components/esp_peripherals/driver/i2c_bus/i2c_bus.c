@@ -95,8 +95,15 @@ esp_err_t i2c_bus_write_bytes(i2c_bus_handle_t bus, int addr, uint8_t *reg, int 
     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
     ret |= i2c_master_start(cmd);
     ret |= i2c_master_write_byte(cmd, addr, 1);
-    ret |= i2c_master_write(cmd, reg, regLen, I2C_ACK_CHECK_EN);
-    ret |= i2c_master_write(cmd, data, datalen, I2C_ACK_CHECK_EN);
+    if (regLen)
+    {
+        ret |= i2c_master_write(cmd, reg, regLen, I2C_ACK_CHECK_EN);
+    }
+    
+    if (datalen)
+    {
+        ret |= i2c_master_write(cmd, data, datalen, I2C_ACK_CHECK_EN);
+    }
     ret |= i2c_master_stop(cmd);
     ret |= i2c_master_cmd_begin(p_bus->i2c_port, cmd, 1000 / portTICK_RATE_MS);
     i2c_cmd_link_delete(cmd);
@@ -109,6 +116,7 @@ esp_err_t i2c_bus_write_data(i2c_bus_handle_t bus, int addr, uint8_t *data, int 
 {
     I2C_BUS_CHECK(bus != NULL, "Handle error", ESP_FAIL);
     i2c_bus_t *p_bus = (i2c_bus_t *) bus;
+    ESP_LOGE(TAG, "p_bus->i2c_port %d", p_bus->i2c_port);
     I2C_BUS_CHECK(p_bus->i2c_port < I2C_NUM_MAX, "I2C port error", ESP_FAIL);
     I2C_BUS_CHECK(data != NULL, "Not initialized input data pointer", ESP_FAIL);
     esp_err_t ret = ESP_OK;
@@ -145,6 +153,79 @@ esp_err_t i2c_bus_read_bytes(i2c_bus_handle_t bus, int addr, uint8_t *reg, int r
     cmd = i2c_cmd_link_create();
     ret |= i2c_master_start(cmd);
     ret |= i2c_master_write_byte(cmd, addr | 0x01, I2C_ACK_CHECK_EN);
+
+    for (int i = 0; i < datalen - 1; i++) {
+        ret |= i2c_master_read_byte(cmd, &outdata[i], 0);
+    }
+    ret |= i2c_master_read_byte(cmd, &outdata[datalen - 1], 1);
+
+    ret = i2c_master_stop(cmd);
+    ret = i2c_master_cmd_begin(p_bus->i2c_port, cmd, 1000 / portTICK_RATE_MS);
+    i2c_cmd_link_delete(cmd);
+
+    mutex_unlock(_busLock);
+    I2C_BUS_CHECK(ret == 0, "I2C Bus ReadReg Error", ESP_FAIL);
+    return ret;
+}
+
+esp_err_t i2c_bus_write_bytes_uhf(i2c_bus_handle_t bus, int addr, uint16_t reg, int regLen, uint8_t *data, int datalen)
+{
+    I2C_BUS_CHECK(bus != NULL, "Handle error", ESP_FAIL);
+    i2c_bus_t *p_bus = (i2c_bus_t *) bus;
+    I2C_BUS_CHECK(p_bus->i2c_port < I2C_NUM_MAX, "I2C port error", ESP_FAIL);
+    I2C_BUS_CHECK(data != NULL, "Not initialized input data pointer", ESP_FAIL);
+    esp_err_t ret = ESP_OK;
+    mutex_lock(_busLock);
+    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+    ret |= i2c_master_start(cmd);
+    ret |= i2c_master_write_byte(cmd, addr & 0xFE, 1);
+ 
+    uint8_t add_H,add_L;
+    add_H = reg >> 8;
+    add_L = reg & 0x00FF;
+    if (regLen)
+    {
+        ret |= i2c_master_write_byte(cmd, add_H, 1);
+        ret |= i2c_master_write_byte(cmd, add_L, 1);
+    }
+    
+    if (datalen)
+    {
+        ret |= i2c_master_write(cmd, data, datalen, I2C_ACK_CHECK_EN);
+    }
+    ret |= i2c_master_stop(cmd);
+    ret |= i2c_master_cmd_begin(p_bus->i2c_port, cmd, 1000 / portTICK_RATE_MS); 
+    i2c_cmd_link_delete(cmd);
+    mutex_unlock(_busLock);
+    I2C_BUS_CHECK(ret == 0, "I2C Bus WriteReg Error", ESP_FAIL);
+    return ret;
+}
+
+esp_err_t i2c_bus_read_bytes_uhf(i2c_bus_handle_t bus, int addr, uint16_t reg, int reglen, uint8_t *outdata, int datalen)
+{
+    I2C_BUS_CHECK(bus != NULL, "Handle error", ESP_FAIL);
+    i2c_bus_t *p_bus = (i2c_bus_t *) bus;
+    I2C_BUS_CHECK(p_bus->i2c_port < I2C_NUM_MAX, "I2C port error", ESP_FAIL);
+    I2C_BUS_CHECK(outdata != NULL, "Not initialized output data buffer pointer", ESP_FAIL);
+    esp_err_t ret = ESP_OK;
+    mutex_lock(_busLock);
+    i2c_cmd_handle_t cmd;
+    cmd = i2c_cmd_link_create();
+    ret |= i2c_master_start(cmd);
+    ret |= i2c_master_write_byte(cmd, addr & 0xFE, 1);
+
+    uint8_t add_H,add_L;
+    add_H = reg >> 8;
+    add_L = reg & 0x00FF;
+    ret |= i2c_master_write_byte(cmd, add_H, 1);
+    ret |= i2c_master_write_byte(cmd, add_L, 1);
+    ret |= i2c_master_stop(cmd);
+    ret |= i2c_master_cmd_begin(p_bus->i2c_port, cmd, 1000 / portTICK_RATE_MS);
+    i2c_cmd_link_delete(cmd);
+
+    cmd = i2c_cmd_link_create();
+    ret |= i2c_master_start(cmd);
+    ret |= i2c_master_write_byte(cmd, (addr & 0xFE) | 0x01, I2C_ACK_CHECK_EN);
 
     for (int i = 0; i < datalen - 1; i++) {
         ret |= i2c_master_read_byte(cmd, &outdata[i], 0);

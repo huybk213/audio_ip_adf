@@ -2,7 +2,7 @@ menu "Audio HAL"
 
 choice AUDIO_BOARD
     prompt "Audio board"
-    default ESP_LYRAT_V4_3_BOARD
+    default BOARD_TRO_GIANG
     help
         Select an audio board to use with the ESP-ADF
 config AUDIO_BOARD_CUSTOM
@@ -33,7 +33,8 @@ config ESP32_S3_BOX_BOARD
     bool "ESP32-S3-BOX"
 config ESP32_C3_LYRA_V2_BOARD
     bool "ESP32-C3-Lyra-v2.0"
-
+config BOARD_TRO_GIANG
+    bool "Boar tro giang"
 endchoice
 
 choice ESP32_KORVO_DU1906_DAC

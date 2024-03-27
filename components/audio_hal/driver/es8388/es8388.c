@@ -24,7 +24,7 @@
 
 #include <string.h>
 #include "esp_log.h"
-#include "i2c_bus.h"
+
 #include "es8388.h"
 #include "board_pins_config.h"
 
@@ -141,6 +141,11 @@ static int i2c_init()
     ES_ASSERT(res, "getting i2c pins error", -1);
     i2c_handle = i2c_bus_create(I2C_NUM_0, &es_i2c_cfg);
     return res;
+}
+
+i2c_bus_handle_t es8388_get_i2c_handle(void)
+{
+    return i2c_handle;
 }
 
 void es8388_read_all()

@@ -123,7 +123,7 @@ static void wifi_ble_event_callback(esp_blufi_cb_event_t event, esp_blufi_cb_par
             }
         case ESP_BLUFI_EVENT_RECV_SLAVE_DISCONNECT_BLE:
             ESP_LOGI(TAG, "BLUFI close a gatt connection");
-            esp_blufi_close(cfg->ble_server_if, cfg->ble_conn_id);
+            //esp_blufi_close(cfg->ble_server_if, cfg->ble_conn_id);
             break;
         case ESP_BLUFI_EVENT_DEAUTHENTICATE_STA:
             /* TODO */

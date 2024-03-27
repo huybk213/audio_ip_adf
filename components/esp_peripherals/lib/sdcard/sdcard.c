@@ -34,18 +34,30 @@
 #include "driver/sdmmc_host.h"
 #include "driver/sdmmc_defs.h"
 #include "driver/gpio.h"
-
 #include "sdcard.h"
 #include "board.h"
 
 static const char *TAG = "SDCARD";
 int g_gpio = -1;
+// ThucND
+#ifdef CONFIG_SD_CARD_USING
+// This define Is used in assistant speaker
+#define PIN_NUM_MISO 12
+#define PIN_NUM_MOSI 13
+#define PIN_NUM_CLK  2
+#define PIN_NUM_CS   14
+#ifndef SPI_DMA_CHAN
+#define SPI_DMA_CHAN    1
 
-#define PIN_NUM_MISO 2
-#define PIN_NUM_MOSI 15
+#endif //SPI_DMA_CHAN
+#else
+#define PIN_NUM_MISO 12
+#define PIN_NUM_MOSI 13
 #define PIN_NUM_CLK  14
-#define PIN_NUM_CS   13
-
+#define PIN_NUM_CS   2
+#endif
+#define MAX_FILE_TO_OPEN  5
+//ThucND END
 static void sdmmc_card_print_info(const sdmmc_card_t *card)
 {
     ESP_LOGD(TAG, "Name: %s\n", card->cid.name);
@@ -58,56 +70,47 @@ static void sdmmc_card_print_info(const sdmmc_card_t *card)
     ESP_LOGD(TAG, "SCR: sd_spec=%d, bus_width=%d\n", card->scr.sd_spec, card->scr.bus_width);
 }
 
+int8_t get_sdcard_open_file_num_max(void)
+{
+    return MAX_FILE_TO_OPEN;
+}
+
 esp_err_t sdcard_mount(const char *base_path, periph_sdcard_mode_t mode)
 {
     if (mode >= SD_MODE_MAX) {
         ESP_LOGE(TAG, "PLease select the correct sd mode: 1-line SD mode, 4-line SD mode or SPI mode!, current mode is %d", mode);
         return ESP_FAIL;
     }
+    esp_err_t ret;
+//ThucND begin
 
+#ifndef CONFIG_SD_CARD_USING
+    
     sdmmc_card_t *card = NULL;
-    esp_err_t ret = 0;
-
+    esp_err_t ret;
     esp_vfs_fat_sdmmc_mount_config_t mount_config = {
         .format_if_mount_failed = false,
-        .max_files = get_sdcard_open_file_num_max(),
+        .max_files = get_sdcard_open_file_num_max()
     };
-    if (mode != SD_MODE_SPI) {
-        ESP_LOGI(TAG, "Using %d-line SD mode,  base path=%s", mode, base_path);
 
+    if (mode != SD_MODE_SPI) {
+        ESP_LOGI(TAG, "Using 1-line SD mode, 4-line SD mode,  base path=%s", base_path);
         sdmmc_host_t host = SDMMC_HOST_DEFAULT();
-        // host.max_freq_khz = SDMMC_FREQ_HIGHSPEED;
+        host.max_freq_khz = SDMMC_FREQ_HIGHSPEED;
 
         sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
-        // slot_config.gpio_cd = g_gpio;
-        slot_config.width = mode;
-        // Enable internal pullups on enabled pins. The internal pullups
-        // are insufficient however, please make sure 10k external pullups are
-        // connected on the bus. This is for debug / example purpose only.
-        slot_config.flags |= SDMMC_SLOT_FLAG_INTERNAL_PULLUP;
+        slot_config.gpio_cd = g_gpio;
+        slot_config.width = mode & 0X01;
 
-#if CONFIG_IDF_TARGET_ESP32S3
-        slot_config.clk = ESP_SD_PIN_CLK;
-        slot_config.cmd = ESP_SD_PIN_CMD;
-        slot_config.d0 = ESP_SD_PIN_D0;
-        slot_config.d1 = ESP_SD_PIN_D1;
-        slot_config.d2 = ESP_SD_PIN_D2;
-        slot_config.d3 = ESP_SD_PIN_D3;
-        slot_config.d4 = ESP_SD_PIN_D4;
-        slot_config.d5 = ESP_SD_PIN_D5;
-        slot_config.d6 = ESP_SD_PIN_D6;
-        slot_config.d7 = ESP_SD_PIN_D7;
-        slot_config.cd = ESP_SD_PIN_CD;
-        slot_config.wp = ESP_SD_PIN_WP;
-#else
-        gpio_set_pull_mode(GPIO_NUM_15, GPIO_PULLUP_ONLY);
-        gpio_set_pull_mode(GPIO_NUM_2,  GPIO_PULLUP_ONLY);
+        gpio_set_pull_mode(GPIO_NUM_15, GPIO_PULLUP_ONLY);  
+        gpio_set_pull_mode(GPIO_NUM_2,  GPIO_PULLUP_ONLY);   
+        gpio_set_pull_mode(GPIO_NUM_13, GPIO_PULLUP_ONLY);
 
         if (mode == SD_MODE_4_LINE) {
             gpio_set_pull_mode(GPIO_NUM_4,  GPIO_PULLUP_ONLY);
             gpio_set_pull_mode(GPIO_NUM_12, GPIO_PULLUP_ONLY);
         }
-#endif
+
         ret = esp_vfs_fat_sdmmc_mount(base_path, &host, &slot_config, &mount_config, &card);
     } else {
         ESP_LOGI(TAG, "Using SPI mode, base path=%s", base_path);
@@ -121,6 +124,110 @@ esp_err_t sdcard_mount(const char *base_path, periph_sdcard_mode_t mode)
         ret = esp_vfs_fat_sdmmc_mount(base_path, &host, &slot_config, &mount_config, &card);
     }
 
+#else
+    
+    // Options for mounting the filesystem.
+    // If format_if_mount_failed is set to true, SD card will be partitioned and
+    // formatted in case when mounting fails.
+    esp_vfs_fat_sdmmc_mount_config_t mount_config = {
+#ifdef CONFIG_EXAMPLE_FORMAT_IF_MOUNT_FAILED
+        .format_if_mount_failed = true,
+#else
+        .format_if_mount_failed = false,
+#endif // EXAMPLE_FORMAT_IF_MOUNT_FAILED
+        .max_files = 5,
+        .allocation_unit_size = 16 * 1024
+    };
+    sdmmc_card_t *card;
+    const char mount_point[] = "/sdcard";
+    ESP_LOGI(TAG, "Initializing SD card");
+    // Use settings defined above to initialize SD card and mount FAT filesystem.
+    // Note: esp_vfs_fat_sdmmc/sdspi_mount is all-in-one convenience functions.
+    // Please check its source code and implement error recovery when developing
+    // production applications.
+
+    if (mode != SD_MODE_SPI) {
+    ESP_LOGI(TAG, "Using SDMMC peripheral");
+    sdmmc_host_t host = SDMMC_HOST_DEFAULT();
+
+    // This initializes the slot without card detect (CD) and write protect (WP) signals.
+    // Modify slot_config.gpio_cd and slot_config.gpio_wp if your board has these signals.
+    sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
+
+    // To use 1-line SD mode, uncomment the following line:
+    // slot_config.width = 1;
+
+    // GPIOs 15, 2, 4, 12, 13 should have external 10k pull-ups.
+    // Internal pull-ups are not sufficient. However, enabling internal pull-ups
+    // does make a difference some boards, so we do that here.
+    gpio_set_pull_mode(15, GPIO_PULLUP_ONLY);   // CMD, needed in 4- and 1- line modes
+    gpio_set_pull_mode(2, GPIO_PULLUP_ONLY);    // D0, needed in 4- and 1-line modes
+    gpio_set_pull_mode(4, GPIO_PULLUP_ONLY);    // D1, needed in 4-line mode only
+    gpio_set_pull_mode(12, GPIO_PULLUP_ONLY);   // D2, needed in 4-line mode only
+    gpio_set_pull_mode(13, GPIO_PULLUP_ONLY);   // D3, needed in 4- and 1-line modes
+
+    ESP_LOGI(TAG, "Mounting filesystem");
+    ret = esp_vfs_fat_sdmmc_mount(mount_point, &host, &slot_config, &mount_config, &card);
+    }
+    else {
+
+    ESP_LOGI(TAG, "Using SPI peripheral");
+
+    sdmmc_host_t host = SDSPI_HOST_DEFAULT();
+    //host.max_freq_khz = 1000; //do not use 4000 because it will return 0x109 err
+    spi_bus_config_t bus_cfg = {
+        .mosi_io_num = PIN_NUM_MOSI,
+        .miso_io_num = PIN_NUM_MISO,
+        .sclk_io_num = PIN_NUM_CLK,
+        .quadwp_io_num = -1,
+        .quadhd_io_num = -1,
+        .max_transfer_sz = 4000,
+    };
+    ret = spi_bus_initialize(host.slot, &bus_cfg, SPI_DMA_CHAN);
+    if (ret != ESP_OK && (ret != ESP_ERR_INVALID_STATE)) {
+        ESP_LOGE(TAG, "Failed to initialize bus.");
+        return;
+    }
+
+    gpio_config_t io_config = {};
+    //out put no pull
+    // io_config.pin_bit_mask = GPIO_OUTPUT_SEL;
+    // io_config.mode = GPIO_MODE_OUTPUT;
+    // io_config.intr_type = GPIO_INTR_DISABLE;
+    // io_config.pull_down_en = 0;
+    // io_config.pull_up_en = 1;
+    // gpio_config (&io_config);
+    // io_config.pin_bit_mask = GPIO_INPUT_SEL;
+    // io_config.mode = GPIO_MODE_INPUT;
+    // io_config.intr_type = GPIO_INTR_DISABLE;
+    // io_config.pull_down_en = 0;
+    // io_config.pull_up_en = 0;
+    // gpio_config (&io_config);
+    // This initializes the slot without card detect (CD) and write protect (WP) signals.
+    // Modify slot_config.gpio_cd and slot_config.gpio_wp if your board has these signals.
+    sdspi_device_config_t slot_config = SDSPI_DEVICE_CONFIG_DEFAULT();
+    slot_config.gpio_cs = PIN_NUM_CS;
+    slot_config.host_id = host.slot;
+
+    ret = esp_vfs_fat_sdspi_mount(mount_point, &host, &slot_config, &mount_config, &card);
+
+    if (ret != ESP_OK) {
+        if (ret == ESP_FAIL) {
+            ESP_LOGE(TAG, "Failed to mount filesystem. "
+                     "If you want the card to be formatted, set the EXAMPLE_FORMAT_IF_MOUNT_FAILED menuconfig option.");
+        } else {
+            ESP_LOGE(TAG, "Failed to initialize the card (%s). "
+                     "Make sure SD card lines have pull-up resistors in place.", esp_err_to_name(ret));
+        }
+        return;
+    }
+    ESP_LOGI(TAG, "Filesystem mounted");
+
+    // Card has been initialized, print its properties
+    sdmmc_card_print_info(card);
+    }
+#endif
+//ThucND end
     switch (ret) {
         case ESP_OK:
             // Card has been initialized, print its properties
@@ -158,6 +265,7 @@ esp_err_t sdcard_unmount(void)
 bool sdcard_is_exist()
 {
     if (g_gpio >= 0) {
+        //ESP_LOGI (TAG, "gpio get lv %d, %d\r\n", g_gpio, gpio_get_level(g_gpio));
         return (gpio_get_level(g_gpio) == 0x00);
     } else {
         return true;
@@ -187,13 +295,13 @@ esp_err_t sdcard_init(int card_detect_pin, void (*detect_intr_handler)(void *), 
 {
     esp_err_t ret = ESP_OK;
     if (card_detect_pin >= 0) {
-        gpio_set_direction(card_detect_pin, GPIO_MODE_INPUT);
-        if (detect_intr_handler) {
-            gpio_set_intr_type(card_detect_pin, GPIO_INTR_ANYEDGE);
-            gpio_isr_handler_add(card_detect_pin, detect_intr_handler, isr_context);
-            gpio_intr_enable(card_detect_pin);
-        }
-        gpio_pullup_en(card_detect_pin);
+        // gpio_set_direction(card_detect_pin, GPIO_MODE_INPUT);
+        // if (detect_intr_handler) {
+        //     gpio_set_intr_type(card_detect_pin, GPIO_INTR_ANYEDGE);
+        //     gpio_isr_handler_add(card_detect_pin, detect_intr_handler, isr_context);
+        //     gpio_intr_enable(card_detect_pin);
+        // }
+        // gpio_pullup_en(card_detect_pin);
     }
     g_gpio = card_detect_pin;
     return ret;
